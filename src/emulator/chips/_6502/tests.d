@@ -2,7 +2,6 @@ module emulator.chips._6502.tests;
 
 import std.stdio;
 import emulator.chips._6502.all;
-import emulator.Bus;
 import emulator.component.Memory;
 
 unittest {
@@ -835,6 +834,8 @@ tsx();
 txa();
 txs();
 tya();
-klaus();
+static if(false) {
+    klaus();
+}
 
 } // unittest

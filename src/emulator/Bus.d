@@ -15,10 +15,22 @@ public:
             if(c.write(addr, value)) break;
         }
     }
+    void writeWord(uint addr, ushort value) {
+        foreach(c; components) {
+            if(c.writeWord(addr, value)) break;
+        }
+    }
     ubyte read(uint addr) {
         ubyte value;
         foreach(c; components) {
             if(c.read(addr, value)) break;
+        }
+        return value;
+    }
+    ushort readWord(uint addr) {
+        ushort value;
+        foreach(c; components) {
+            if(c.readWord(addr, value)) break;
         }
         return value;
     }

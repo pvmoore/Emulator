@@ -1,6 +1,6 @@
 module emulator.chips._6502.instructions;
 
-import emulator.all;
+import emulator.chips._6502.all;
 
 enum {
     ADC_IMM     = 0x69,

@@ -1,6 +1,6 @@
 module emulator.chips._6502.CPU6502;
 
-import emulator.all;
+import emulator.chips._6502.all;
 
 /**
  *  0000-00ff  Zero page memory
