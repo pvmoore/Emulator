@@ -9,6 +9,8 @@ import emulator.all;
  *  fffa-fffb  Address of NMI handler
  *  fffc-fffd  Address of Power on handler
  *  fffe-ffff  Address of BRK/interrupt handler
+ *
+ *  Notes: Decimal mode not currently supported.
  */
 final class CPU6502 {
 private:

@@ -2,11 +2,6 @@ module emulator.chips._6502.instructions;
 
 import emulator.all;
 
-// struct Instr {
-//     I id;
-//     ubyte cycles;
-// }
-
 enum {
     ADC_IMM     = 0x69,
     ADC_ZP      = 0x65,
@@ -195,7 +190,7 @@ enum {
     TYA         = 0x98,
 
     // Undocumented illegal instruction below here (Not implemented)
-    
+
     ANC_IMM     = 0x0b, // A = A & imm
     ANC_IMM2    = 0x2b,
 
