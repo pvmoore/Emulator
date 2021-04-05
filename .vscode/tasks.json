@@ -1,0 +1,58 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "dub",
+            "run": true,
+            "compiler": "dmd",
+            "archType": "x86_64",
+            "buildType": "debug",
+            "configuration": "test",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "**** DEBUG ****",
+            "type": "shell",
+            "windows": {
+                "command": "chcp 65001 && dub run --build=debug --config=test --compiler=dmd --arch=x86_64 --parallel"
+            },
+
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "**** RELEASE ****",
+            "type": "shell",
+            "windows": {
+                "command": "chcp 65001 && dub run --build=release --config=test --compiler=ldc2 --arch=x86_64 --parallel"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "**** Unit Test ****",
+            "type": "shell",
+            "windows": {
+                "command": "chcp 65001 && dub run --build=unittest --config=test --compiler=dmd --arch=x86_64 --parallel"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
