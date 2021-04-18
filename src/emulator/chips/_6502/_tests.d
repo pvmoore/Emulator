@@ -1,4 +1,4 @@
-module emulator.chips._6502.tests;
+module emulator.chips._6502._tests;
 
 import std.stdio;
 import emulator.chips._6502.all;
@@ -6,7 +6,7 @@ import emulator.component.Memory;
 
 unittest {
 
-__gshared CPU6502 cpu;
+__gshared _6502 cpu;
 __gshared Memory mem;
 __gshared Bus bus;
 
@@ -18,7 +18,7 @@ void writeBytes(uint addr, ubyte[] bytes) {
 void setup() {
     mem = new Memory(65536);
     bus = new Bus().add(mem);
-    cpu = new CPU6502();
+    cpu = new _6502();
     assert(cpu);
     assert(mem);
     assert(bus);
@@ -31,7 +31,7 @@ void setup() {
     writeBytes(0x0300, [0x05, 0x06, 0x07, 0x08]);
     writeBytes(0x0400, [0x00, 0x00, 0x00, 0x00]); // non ZP writes
 }
-void test(ubyte[] p, int count, bool function(CPU6502.State state) checker, bool dumpState = false) {
+void test(ubyte[] p, int count, bool function(_6502.State state) checker, bool dumpState = false) {
     cpu.reset();
     cpu.load(0x0200, p);
     cpu.setPC(0x0200);

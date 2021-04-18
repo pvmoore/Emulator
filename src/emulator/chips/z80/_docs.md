@@ -6,12 +6,12 @@ https://zany80.github.io/documentation/Z80/UserManual.html
 
 ## Instructions
 
-https://wikiti.brandonw.net/index.php?title=Z80_Instruction_Set
-http://z80-heaven.wikidot.com/instructions-set
 http://z80-heaven.wikidot.com/opcode-reference-chart
 https://clrhome.org/table/
 http://map.grauw.nl/resources/z80instr.php
 http://www.z80.info/z80-op.txt
+https://wikiti.brandonw.net/index.php?title=Z80_Instruction_Set
+http://z80-heaven.wikidot.com/instructions-set
 
 ### Undocumented Instructions
 

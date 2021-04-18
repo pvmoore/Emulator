@@ -36,12 +36,12 @@ void test(ubyte[] p, int count, bool function(State state) checker, bool dumpSta
 void nop_00() {
     test([NOP], 1, s=>true);
 }
-void ld_01() {
+void ld_r() {
     test([LD_BC_nn, 0x01, 0x23], 1, s=>true, true);
 }
 
 setup();
 nop_00();
-ld_01();
+ld_r();
 
 } // unittest

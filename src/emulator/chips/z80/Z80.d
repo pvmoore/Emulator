@@ -27,21 +27,58 @@ public:
         state.PC = addr;
     }
     void execute(bool dumpState = false) {
-        auto op = Op(fetchByte());
-        auto row = op.byte1>>>4;
-        auto col = op.byte1&0b1111;
-        auto instruction = primary[row][col];
+        auto op     = Op(fetchByte());
+        auto index  = op.byte1;
+        auto table  = cast(Instruction*)&primary;
+        auto offset = 0;
+
+        switch(index) {
+            case 0xCB:
+                table = cast(Instruction*)groupCB;
+                index = op.byte2 = fetchByte();
+                break;
+            case 0xDD:
+                table = cast(Instruction*)groupDD;
+                index = op.byte2 = fetchByte();
+                break;
+            case 0xED:
+                table  = cast(Instruction*)groupED;
+                index  = op.byte2 = fetchByte();
+                offset = 0x40;
+                break;
+            case 0xFD:
+                table = cast(Instruction*)groupFD;
+                index = op.byte2 = fetchByte();
+                break;
+            default:
+                break;
+        }
+
+        Instruction instruction = table[index - offset];
+
         if(instruction.strategy is null) {
             throw new Exception("op %02x not implemented".format(op.byte1));
         }
-        //writefln("instruction = %s", instruction);
+        writefln("instruction = %s", instruction);
 
         instruction.execute(this, op);
 
         if(dumpState) {
             writefln("%s", state);
         }
-
+    }
+    ubyte pop() {
+        return readByte(state.SP++);
+    }
+    ushort popWord() {
+        return (pop() | (pop()<<8)).as!ushort;
+    }
+    void push(ubyte value) {
+        writeByte(--state.SP, value);
+    }
+    void pushWord(ushort value) {
+        push((value>>>8) & 0xff);
+        push(value & 0xff);
     }
     /**
      *  Read the next byte at PC and inc PC.

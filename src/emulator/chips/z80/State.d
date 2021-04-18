@@ -54,7 +54,14 @@ public:
     ubyte I;    // interrupt
     ubyte R;    // refresh
 
+    // shadows
     ushort AF1;
+    ushort BC1;
+    ushort DE1;
+    ushort HL1;
+
+    // maskable interrupt flipflop
+    bool IFF = true;
 
     override string toString() {
         string flags =
@@ -121,6 +128,19 @@ public:
             case IY: this.IY = value; break;
             case SP: this.SP = value; break;
             default: throw new Exception("Bad 16 bit reg");
+        }
+    }
+    /**
+     *  r can be one of AF, BC, DE, HL
+     */
+    void exchangeWithShadow(Reg r) {
+        ushort temp;
+        switch(r) {
+            case Reg.AF: temp = AF; AF = AF1; AF1 = temp; break;
+            case Reg.BC: temp = BC; BC = BC1; BC1 = temp; break;
+            case Reg.DE: temp = DE; DE = DE1; DE1 = temp; break;
+            case Reg.HL: temp = HL; HL = HL1; HL1 = temp; break;
+            default: throw new Exception("Invalid shadow register %s".format(r));
         }
     }
     //══════════════════════════════════════════════════════════════════════════════════════════════

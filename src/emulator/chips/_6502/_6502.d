@@ -1,4 +1,4 @@
-module emulator.chips._6502.CPU6502;
+module emulator.chips._6502._6502;
 
 import emulator.chips._6502.all;
 
@@ -12,7 +12,7 @@ import emulator.chips._6502.all;
  *
  *  Notes: Decimal mode not currently supported.
  */
-final class CPU6502 {
+final class _6502 {
 private:
     Bus bus;
     Op[][16] opcodes;

@@ -2,18 +2,22 @@ module main;
 
 import std.stdio;
 import emulator.all;
+import emulator.chips.z80.Z80Encoder;
 
 void main() {
-    writefln("Hello world");
 
     //auto bbc = new BBCMicro();
-    auto commodore = new C64();
+    // auto commodore = new C64();
+    // auto p = program1();
+    // commodore.load(p);
+    // commodore.execute();
 
-    auto p = program1();
+    auto assembler = new Assembler(new Z80Encoder())
+        //.fromFile("/temp/spectrum/aticatac.asm");
+        .fromFile("/temp/spectrum/test1.asm");
+        //.fromFile("/temp/spectrum/test1.asm");
 
-    commodore.load(p);
-
-    commodore.execute();
+    assembler.run();
 
 
 }
