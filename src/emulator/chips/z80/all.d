@@ -12,6 +12,7 @@ import emulator.util;
 
 import emulator.chips.z80.State;
 import emulator.chips.z80.Z80;
+import emulator.chips.z80.Z80Decoder;
 import emulator.chips.z80.Z80Encoder;
 
 import emulator.chips.z80.instr.instructions;
@@ -28,4 +29,13 @@ import emulator.chips.z80.instr.strategies_fd;
 
 version(unittest) {
     import emulator.chips.z80._tests;
+}
+
+import emulator.assembler.all;
+
+Assembler createZ80Assembler() {
+    return new Assembler(true, new Z80Encoder());
+}
+Disassembler createZ80Disassembler() {
+    return new Disassembler(true, new Z80Decoder());
 }

@@ -45,20 +45,19 @@ final class Z80Encoder : Encoder {
 
         if(match.instr) {
 
-            int i = 0;
             if(match.hashByte!=0) {
-                enc.temp[i++] = match.hashByte;
+                enc.bytes ~= match.hashByte;
             }
-            enc.temp[i++] = match.instr.code;
+            enc.bytes ~= match.instr.code;
+
             if(match.numFixupBytes>0) {
                 enc.numFixupBytes = match.numFixupBytes;
                 enc.fixupTokenIndex = match.fixupTokenIndex;
 
                 foreach(n; 0..match.numFixupBytes) {
-                    enc.temp[i++] = 0;
+                    enc.bytes ~= 0;
                 }
             }
-            enc.numBytes = i;
             enc.fixupTokens = match.fixupTokens;
 
             //writefln("  %s fixup num:%s", enc.temp[0..i].map!(it=>"%02x".format(it).array), enc.numFixupBytes);

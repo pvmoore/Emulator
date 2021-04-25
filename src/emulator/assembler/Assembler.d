@@ -5,10 +5,26 @@ import emulator.assembler.all;
 /**
  *  Generic assembler.
  *  Expects raw string data or an assembly file.
+ *
+ *  TODO - handle data
  */
 final class Assembler {
-    this(Encoder encoder) {
+
+    static struct Line {
+        uint address;
+        ubyte[] code;
+        string[] labels;
+
+        string toString() {
+            string l = labels? "%s: ".format(labels) : "";
+            return "%04x: %s%s".format(address, l, code.toHexStringArray());
+        }
+    }
+
+    this(bool littleEndian, Encoder encoder) {
+        this.littleEndian = littleEndian;
         this.encoder = encoder;
+
         this.dataDirectives = new Set!string;
         dataDirectives.add([
             "defb", "defw", "db", "dw", ".db", ".dw", ".byte", ".word",
@@ -16,7 +32,6 @@ final class Assembler {
             "defs", "ds", ".ds", ".block", "blkb", "data"
         ]);
         this.encoding = new Encoder.Encoding();
-        this.encoding.temp = new ubyte[32].ptr;
     }
     auto fromFile(string filename) {
         this.text = cast(string)From!"std.file".read(filename);
@@ -28,10 +43,16 @@ final class Assembler {
         this.lexer = new Lexer(text);
         return this;
     }
-    void run() {
+    void reset() {
+        constants = null;
+        labelToAddress = null;
+        addressToLine = null;
+        fixups = null;
+    }
+    Line[] encode() {
         writefln("Running assembler ...");
         this.tokens = lexer.tokenise();
-        if(tokens.length==0) return;
+        if(tokens.length==0) return null;
 
         pass1();
 
@@ -50,31 +71,34 @@ final class Assembler {
         }
 
         pass2();
+
+        return getLinesInOrder();
+    }
+    /**
+     *  @return the Line at address or an empty Line
+     */
+    Line getLine(uint pc) {
+        return addressToLine.get(pc, Line(0));
     }
 private:
+    bool littleEndian;
     Set!string dataDirectives;
     string text;
     Lexer lexer;
     Encoder encoder;
     Token[] tokens;
+    uint firstAddress;
 
-    static struct Line {
-        uint address;
-        ubyte[] code;
-        string toString() { return "Line(addr:%04x, code:%s)".format(address, code); }
-    }
     static struct Fixup {
-        int line;
-        int numBytes;
+        uint address;
+        uint numBytes;
         string[] expressionTokens;
     }
 
-    string[][string] constants;     // pass1 - equ
-    uint[string] labelToAddress;    // pass1
-    uint[uint] lineToAddress;       // pass1
-
-    Line[uint] lines;
-    Fixup[] fixups;                 // pass2
+    string[][string] constants;
+    uint[string] labelToAddress;
+    Line[uint] addressToLine;
+    Fixup[] fixups;
 
     int pos;
     int pc;
@@ -97,9 +121,7 @@ private:
             int length          = strings.length.as!int;
             assert(length>0);
 
-            lineToAddress[lineNumber] = pc;
-
-            Line line = Line(pc);
+            auto line = getLineAtAddress(pc);
 
             string first  = strings[0].toLower();
             string second = strings.length > 1 ? strings[1].toLower() : "";
@@ -136,11 +158,14 @@ private:
 
             // label
             if(first.endsWith(":")) {
-                labelToAddress[first[0..$-1]] = pc;
+                string label = first[0..$-1];
+                line.labels ~= label;
+                labelToAddress[label] = pc;
                 if(length==1) continue;
                 if(dataDirectives.contains(second)) continue;
             } else if(startsOnMargin) {
                 labelToAddress[first] = pc;
+                line.labels ~= first;
                 if(length==1) continue;
                 if(dataDirectives.contains(second)) continue;
             }
@@ -153,21 +178,20 @@ private:
 
             encoder.encode(encoding, lower);
 
-            if(encoding.numBytes==0) {
+            if(encoding.bytes.length==0) {
                 throw new Exception("Bad instruction on line %s".format(lineNumber+1));
             }
 
-            line.code = encoding.temp[0..encoding.numBytes].dup;
+            line.code = encoding.bytes.dup;
 
             if(encoding.numFixupBytes>0) {
                 uint index = encoding.fixupTokenIndex;
 
                 writefln("fixup index: %s, expression: %s", index, encoding.fixupTokens);
 
-                fixups ~= Fixup(lineNumber, encoding.numFixupBytes, encoding.fixupTokens);
+                fixups ~= Fixup(pc, encoding.numFixupBytes, encoding.fixupTokens);
             }
 
-            lines[lineNumber] = line;
             pc += line.code.length.as!int;
         }
     }
@@ -184,17 +208,22 @@ private:
             exprParser.addReference(k, v);
         }
 
-
         foreach(f; fixups) {
-            auto line = f.line in lines;
+            auto line = getLineAtAddress(f.address);
             auto numBytes = f.numBytes;
 
             uint value = exprParser.parse(f.expressionTokens);
-            writefln("fixup line %s value = %s", f.line+1, value);
+            //writefln("fixup address %04x value = %s", f.address, value);
             if(numBytes==1) {
-
+                line.code[$-1] = value.as!ubyte;
             } else if(numBytes==2) {
-
+                if(littleEndian) {
+                    line.code[$-2] = (value & 0xff).as!ubyte;
+                    line.code[$-1] = ((value>>>8) & 0xff).as!ubyte;
+                } else {
+                    line.code[$-2] = ((value>>>8) & 0xff).as!ubyte;
+                    line.code[$-1] = (value & 0xff).as!ubyte;
+                }
             } else {
                 todo("handle more than 2 fixup bytes");
             }
@@ -249,5 +278,20 @@ private:
     }
     string[] convertNumbersToInt(string[] tokens) {
         return tokens.map!(it=>isNumber(it) ? convertToIntValue(convertToHex(it)) : it).array;
+    }
+    Line[] getLinesInOrder() {
+        import std;
+        // Sort by address
+        Line[] a = addressToLine.values();
+        sort!"a.address < b.address"(a);
+        return a;
+    }
+    Line* getLineAtAddress(uint pc) {
+        auto p = pc in addressToLine;
+        if(!p) {
+            addressToLine[pc] = Line(pc);
+            return getLineAtAddress(pc);
+        }
+        return p;
     }
 }

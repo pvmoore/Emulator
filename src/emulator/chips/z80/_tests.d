@@ -34,6 +34,9 @@ void test(ubyte[] p, int count, bool function(State state) checker, bool dumpSta
     assert(checker(cpu.state));
 }
 void nop_00() {
+
+    
+
     test([NOP], 1, s=>true);
 }
 void ld_r() {

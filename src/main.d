@@ -2,7 +2,7 @@ module main;
 
 import std.stdio;
 import emulator.all;
-import emulator.chips.z80.Z80Encoder;
+import emulator.chips.z80.all;
 
 void main() {
 
@@ -12,13 +12,16 @@ void main() {
     // commodore.load(p);
     // commodore.execute();
 
-    auto assembler = new Assembler(new Z80Encoder())
+    auto assembler = createZ80Assembler()
         //.fromFile("/temp/spectrum/aticatac.asm");
         .fromFile("/temp/spectrum/test1.asm");
         //.fromFile("/temp/spectrum/test1.asm");
 
-    assembler.run();
+    auto lines = assembler.encode();
 
+    foreach(l; lines) {
+        writefln("%s", l);
+    }
 
 }
 

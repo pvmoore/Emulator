@@ -1,5 +1,7 @@
 module emulator.util;
 
+import emulator.all;
+
 /**
  * bit is 0..7
  */
@@ -27,4 +29,13 @@ bool isEven(ubyte value) {
 
 bool isDigit(char c) {
     return c>='0' && c<='9';
+}
+
+string toHexStringArray(ubyte[] bytes) {
+    string s;
+    for(auto i=0; i<bytes.length; i++) {
+        if(i>0) s ~= " ";
+        s ~= "%02x".format(bytes[i]);
+    }
+    return s;
 }
