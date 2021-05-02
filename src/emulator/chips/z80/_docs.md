@@ -27,7 +27,7 @@ http://www.z80.info/z80undoc.htm
 
 A   - Accumulator
 B   - Counter
-C   - Often used for interfacinf with hardware ports
+C   - Often used for interfacing with hardware ports
 D   - Mostly used in DE 16 bit form
 E   - Mostly used in DE 16 bit form
 F   - Flags

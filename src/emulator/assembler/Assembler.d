@@ -10,17 +10,6 @@ import emulator.assembler.all;
  */
 final class Assembler {
 
-    static struct Line {
-        uint address;
-        ubyte[] code;
-        string[] labels;
-
-        string toString() {
-            string l = labels? "%s: ".format(labels) : "";
-            return "%04x: %s%s".format(address, l, code.toHexStringArray());
-        }
-    }
-
     this(bool littleEndian, Encoder encoder) {
         this.littleEndian = littleEndian;
         this.encoder = encoder;
@@ -33,24 +22,17 @@ final class Assembler {
         ]);
         this.encoding = new Encoder.Encoding();
     }
-    auto fromFile(string filename) {
-        this.text = cast(string)From!"std.file".read(filename);
-        this.lexer = new Lexer(text);
-        return this;
-    }
-    auto fromSource(string text) {
-        this.text = text;
-        this.lexer = new Lexer(text);
-        return this;
-    }
     void reset() {
         constants = null;
         labelToAddress = null;
         addressToLine = null;
         fixups = null;
     }
-    Line[] encode() {
+    Line[] encode(string text) {
         writefln("Running assembler ...");
+        this.text = text;
+        this.lexer = new Lexer(text);
+
         this.tokens = lexer.tokenise();
         if(tokens.length==0) return null;
 
@@ -87,7 +69,6 @@ private:
     Lexer lexer;
     Encoder encoder;
     Token[] tokens;
-    uint firstAddress;
 
     static struct Fixup {
         uint address;
@@ -122,6 +103,8 @@ private:
             assert(length>0);
 
             auto line = getLineAtAddress(pc);
+
+            line.tokens = strings;
 
             string first  = strings[0].toLower();
             string second = strings.length > 1 ? strings[1].toLower() : "";
@@ -212,7 +195,7 @@ private:
             auto line = getLineAtAddress(f.address);
             auto numBytes = f.numBytes;
 
-            uint value = exprParser.parse(f.expressionTokens);
+            uint value = exprParser.parse(convertNumbersToInt(f.expressionTokens));
             //writefln("fixup address %04x value = %s", f.address, value);
             if(numBytes==1) {
                 line.code[$-1] = value.as!ubyte;
@@ -282,7 +265,7 @@ private:
     Line[] getLinesInOrder() {
         import std;
         // Sort by address
-        Line[] a = addressToLine.values();
+        Line[] a = addressToLine.values().filter!(it=>!it.isEmpty()).array;
         sort!"a.address < b.address"(a);
         return a;
     }

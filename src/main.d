@@ -12,12 +12,14 @@ void main() {
     // commodore.load(p);
     // commodore.execute();
 
-    auto assembler = createZ80Assembler()
+    auto src = cast(string)From!"std.file".read("/temp/spectrum/test1.asm");
+
+    auto assembler = createZ80Assembler();
         //.fromFile("/temp/spectrum/aticatac.asm");
-        .fromFile("/temp/spectrum/test1.asm");
+        //.fromFile("/temp/spectrum/test1.asm");
         //.fromFile("/temp/spectrum/test1.asm");
 
-    auto lines = assembler.encode();
+    auto lines = assembler.encode(src);
 
     foreach(l; lines) {
         writefln("%s", l);

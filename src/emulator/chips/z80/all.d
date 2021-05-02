@@ -28,7 +28,7 @@ import emulator.chips.z80.instr.strategies_ed;
 import emulator.chips.z80.instr.strategies_fd;
 
 version(unittest) {
-    import emulator.chips.z80._tests;
+    import emulator.chips.z80._test._tests;
 }
 
 import emulator.assembler.all;

@@ -36,12 +36,12 @@ bool is16Bit(Reg r) {
 final class State {
 public:
     enum Flag : ubyte {
-        C   = 1 << 0,   // Carry
-        N   = 1 << 1,   // Add/Subtract
-        PV  = 1 << 2,   // Parity/Overflow
-        H   = 1 << 4,   // Half Carry
-        Z   = 1 << 6,   // Zero
-        S   = 1 << 7    // Sign
+        C   = 1 << 0,   // 0x01 Carry
+        N   = 1 << 1,   // 0x02 Add/Subtract
+        PV  = 1 << 2,   // 0x04 Parity/Overflow
+        H   = 1 << 4,   // 0x10 Half Carry
+        Z   = 1 << 6,   // 0x40 Zero
+        S   = 1 << 7    // 0x80 Sign
     }
     ushort AF;
     ushort BC;
@@ -60,9 +60,59 @@ public:
     ushort DE1;
     ushort HL1;
 
-    // maskable interrupt flipflop
-    bool IFF = true;
+    // maskable interrupt flipflops
+    bool IFF1 = true; // should be false?
+    bool IFF2 = true; // should be false?
 
+    void reset() {
+        AF = BC = DE = HL = IX = IY = SP = PC = 0;
+        I = R = 0;
+        AF1 = BC1 = DE1 = HL1 = 0;
+        IFF1 = true;
+        IFF2 = true;
+    }
+    State clone() {
+        auto s = new State();
+        s.AF = this.AF;
+        s.BC = this.BC;
+        s.DE = this.DE;
+        s.HL = this.HL;
+        s.IX = this.IX;
+        s.IY = this.IY;
+        s.SP = this.SP;
+        s.PC = this.PC;
+        s.I  = this.I;
+        s.R  = this.R;
+        s.AF1 = this.AF1;
+        s.BC1 = this.BC1;
+        s.DE1 = this.DE1;
+        s.HL1 = this.HL1;
+        s.IFF1 = this.IFF1;
+        s.IFF2 = this.IFF2;
+        return s;
+    }
+    override bool opEquals(const Object other) const {
+        auto s = other.as!State;
+        if(s is null) return false;
+        if(s is this) return true;
+        return
+            s.AF == this.AF &&
+            s.BC == this.BC &&
+            s.DE == this.DE &&
+            s.HL == this.HL &&
+            s.IX == this.IX &&
+            s.IY == this.IY &&
+            s.SP == this.SP &&
+            s.PC == this.PC &&
+            s.I == this.I &&
+            s.R == this.R &&
+            s.AF1 == this.AF1 &&
+            s.BC1 == this.BC1 &&
+            s.DE1 == this.DE1 &&
+            s.HL1 == this.HL1 &&
+            s.IFF1 == this.IFF1 &&
+            s.IFF2 == this.IFF2;
+    }
     override string toString() {
         string flags =
             (flag(Flag.S) ? "S" : "-") ~
@@ -164,8 +214,8 @@ public:
     void L(ubyte value) { HL &= 0xff00; HL |= value; }
     ubyte L()           { return HL & 0xff; }
     //══════════════════════════════════════════════════════════════════════════════════════════════
-    private bool flag(Flag f)           { return (F & f) != 0; }
-    private void flag(Flag f, bool set) { F(set ? F|f : F&~cast(uint)f); }
+    bool flag(Flag f)           { return (F & f) != 0; }
+    void flag(Flag f, bool set) { F(set ? F|f : F&~cast(uint)f); }
 
     bool flagC()  { return flag(Flag.C); }
     bool flagN()  { return flag(Flag.N); }
@@ -174,17 +224,28 @@ public:
     bool flagZ()  { return flag(Flag.Z); }
     bool flagS()  { return flag(Flag.S); }
 
-    void flagC(bool f) { flag(Flag.C, f); }
-    void flagN(bool f) { flag(Flag.N, f); }
+    void flagC(bool f)  { flag(Flag.C, f); }
+    void flagN(bool f)  { flag(Flag.N, f); }
     void flagPV(bool f) { flag(Flag.PV, f); }
-    void flagH(bool f) { flag(Flag.H, f); }
-    void flagZ(bool f) { flag(Flag.Z, f); }
-    void flagS(bool f) { flag(Flag.S, f); }
+    void flagH(bool f)  { flag(Flag.H, f); }
+    void flagZ(bool f)  { flag(Flag.Z, f); }
+    void flagS(bool f)  { flag(Flag.S, f); }
 
-    void updateSZHPV(ubyte before, ubyte after) {
-        flagS((after&80)!=0);
-        flagZ(after==0);
-        // todo H
-        flagPV(before==0x80); // check this
+    void updateH(ubyte left, ubyte right, ubyte result) {
+        auto h = (left ^ right ^ result) & 0x10;
+        flagH(h!=0);
+    }
+    void updateP(ubyte result) {
+        flagPV((result&1)==0);
+    }
+    void updateV(ubyte left, ubyte right, ubyte result) {
+        auto v = (left ^ right) & (left ^ result) & 0x80;
+        flagPV(v!=0);
+    }
+    void updateZ(ubyte result) {
+        flagZ(result==0);
+    }
+    void updateS(ubyte result) {
+        flagS((result&0x80)!=0);
     }
 }

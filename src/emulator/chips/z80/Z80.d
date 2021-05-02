@@ -16,7 +16,7 @@ public:
         return this;
     }
     void reset() {
-
+        state.reset();
     }
     void load(ushort addr, ubyte[] bytes) {
         foreach(i; 0..bytes.length.as!uint) {
@@ -26,7 +26,7 @@ public:
     void setPC(ushort addr) {
         state.PC = addr;
     }
-    void execute(bool dumpState = false) {
+    void execute() {
         auto op     = Op(fetchByte());
         auto index  = op.byte1;
         auto table  = cast(Instruction*)&primary;
@@ -59,13 +59,9 @@ public:
         if(instruction.strategy is null) {
             throw new Exception("op %02x not implemented".format(op.byte1));
         }
-        writefln("instruction = %s", instruction);
+        writefln("Execute %s", instruction);
 
         instruction.execute(this, op);
-
-        if(dumpState) {
-            writefln("%s", state);
-        }
     }
     ubyte pop() {
         return readByte(state.SP++);

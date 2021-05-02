@@ -7,11 +7,15 @@ interface Decoder {
         bool match;
         string[] tokens;
         int numBytes;
+        int numLiteralBytes;
+        int literalTokenIndex;
 
         void reset() {
             match = false;
             tokens.length = 0;
             numBytes = 0;
+            numLiteralBytes = 0;
+            literalTokenIndex = 0;
         }
     }
 

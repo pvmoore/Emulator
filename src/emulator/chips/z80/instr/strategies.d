@@ -327,42 +327,43 @@ final class ALG_a_r : Strategy {
             case 4:
                 // and (4 clocks)
                 s.A = (s.A & src).as!ubyte;
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
+                s.updateS(s.A);
+                s.updateZ(s.A);
                 s.flagH(true);
-                //s.flagPV(before+src <= 0xff); // reset if overflow; otherwise, it is reset ?? dodgy manual
+                s.updateP(s.A);
                 s.flagN(false);
                 s.flagC(false);
                 break;
             case 5:
                 // xor (4 clocks)
                 s.A = (s.A ^ src).as!ubyte;
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
+                s.updateS(s.A);
+                s.updateZ(s.A);
                 s.flagH(false);
-                s.flagPV((s.A&1)==0);
+                s.updateP(s.A);
                 s.flagN(false);
                 s.flagC(false);
                 break;
             case 6:
                 // or (4 clocks)
                 s.A = (s.A | src).as!ubyte;
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
+                s.updateS(s.A);
+                s.updateZ(s.A);
                 s.flagH(false);
-                //s.flagPV(?); // P/V is set if overflow; otherwise, it is reset. How can this overflow?
+                s.updateP(s.A);
                 s.flagN(false);
                 s.flagC(false);
                 break;
             default:
                 // cp (4 clocks)
-                ubyte after = (s.A - src).as!ubyte;
-                s.flagS(after.isNeg());
-                s.flagZ(after==0);
-                s.flagH((before&0b1_0000) && (after&0b1000)); // set if borrow from bit 4 - check this
-                s.flagPV(after > s.A);
+                uint result = (s.A - src);
+                ubyte after = result.as!ubyte;
+                s.updateS(after);
+                s.updateZ(after);
+                s.updateH(s.A, src, after);
+                s.updateV(s.A, src, after);
                 s.flagN(true);
-                s.flagC(src > before); // set if borrow - check this
+                s.flagC(result > 0xff);
                 break;
         }
     }
@@ -505,7 +506,7 @@ final class INCr : Strategy {
         }
         s.flagN(false);
         s.flagPV(before==0x7f);
-        s.flagH((before&0xf) == 0xf);
+        s.flagH((before&0xf)==0xf);
         s.flagZ(before==0xff);
         s.flagS((before+1).isNeg());
     }
@@ -545,7 +546,7 @@ final class DECr : Strategy {
         }
         s.flagS((before-1).isNeg());
         s.flagZ(before==1);
-        s.flagH((before&0xf0)==0xf0);
+        s.flagH((before&0xf)==0);
         s.flagPV(before==0x80);
         s.flagN(true);
     }
@@ -825,10 +826,10 @@ final class AND_a_n : Strategy {
 
         s.A = (s.A & n).as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(true);
-        s.flagPV((before&n) > 0xff);
+        s.updateP(s.A);
         s.flagN(false);
         s.flagC(false);
     }
@@ -847,10 +848,10 @@ final class XOR_a_n : Strategy {
 
         s.A = (s.A ^ n).as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(false);
-        s.flagPV((s.A&1)==0);
+        s.updateP(s.A);
         s.flagN(false);
         s.flagC(false);
     }
@@ -869,10 +870,10 @@ final class OR_a_n : Strategy {
 
         s.A = (s.A | n).as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(false);
-        s.flagPV(false);    // TODO - set if overflow
+        s.updateP(s.A);
         s.flagN(false);
         s.flagC(false);
     }
@@ -888,14 +889,15 @@ final class CP_a_n : Strategy {
 
         // (7 clocks)
 
-        ubyte temp = (s.A | n).as!ubyte;
+        uint temp = (s.A - n);
+        ubyte after = temp.as!ubyte;
 
-        s.flagS(temp.isNeg());
-        s.flagZ(temp==0);
-        s.flagH(false);     // TODO - set if borrow from bit 4
-        s.flagPV(false);    // TODO - set if overflow
+        s.updateS(after);
+        s.updateZ(after);
+        s.updateH(s.A, n, after);
+        s.updateV(s.A, n, after);
         s.flagN(true);
-        s.flagC(false);     // TODO - set if borrow
+        s.flagC(temp > 0xff);
     }
 }
 /** All branches use displacement-2 eg. (-126 to +129) */
@@ -1125,7 +1127,7 @@ final class DI : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
 
-        s.IFF = false;
+        s.IFF1 = false;
     }
 }
 final class EI : Strategy {
@@ -1139,7 +1141,7 @@ final class EI : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
 
-        s.IFF = true;
+        s.IFF1 = true;
     }
 }
 final class EXX : Strategy {

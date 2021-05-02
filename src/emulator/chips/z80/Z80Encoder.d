@@ -148,6 +148,12 @@ private:
                 match.numFixupBytes   = isn ? 1 : 2;
                 match.fixupTokenIndex = i;
 
+                if(asmTokens[i]=="(") {
+                    // assume this instruction has indirect memory access
+                    // rather than an expression surrounded by brackets
+                    return false;
+                }
+
                 auto end = matchTokensBackwards(asmTokens, instrTokens);
                 if(end != -1) {
                     match.fixupTokens = asmTokens[i..end+1];

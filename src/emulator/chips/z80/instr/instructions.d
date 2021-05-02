@@ -44,6 +44,11 @@ struct Instruction {
     int numExtraBytes() const {
         return tokens.contains(N) ? 1 : tokens.contains(NN) ? 2 : 0;
     }
+    int indexOfLiteral() const {
+        auto a = tokens.indexOf(N);
+        if(a!=-1) return a;
+        return tokens.indexOf(NN);
+    }
 }
 struct Op {
     ubyte byte1;
@@ -65,7 +70,7 @@ __gshared const {
 Instruction[256] primary = [
 // row 0
     Instruction(0x00, _nop,       ["nop"]),
-    Instruction(0x01, _ldddnn,    [LD,  BC, NN]),
+    Instruction(0x01, _ldddnn,    [LD, BC, _, NN]),
     Instruction(0x02, _ldbca,     [LD, LBR, BC, RBR, _, A]),
     Instruction(0x03, _incss,     [INC, BC]),
     Instruction(0x04, _incr,      [INC, B]),
@@ -82,8 +87,8 @@ Instruction[256] primary = [
     Instruction(0x0f, _rrca,      ["rrca"]),
 // row 1
     Instruction(0x10, _djnze,    ["djnz", N]),
-    Instruction(0x11, _ldddnn,   [LD, DE, _, N]),
-    Instruction(0x12, _lddea,    [LD, LBR, DE, RBR, A]),
+    Instruction(0x11, _ldddnn,   [LD, DE, _, NN]),
+    Instruction(0x12, _lddea,    [LD, LBR, DE, RBR, _, A]),
     Instruction(0x13, _incss,    [INC, DE]),
     Instruction(0x14, _incr,     [INC, D]),
     Instruction(0x15, _decr,     [DEC, D]),
@@ -308,7 +313,7 @@ Instruction[256] primary = [
     Instruction(0xe3, _exsphl,    ["ex", LBR, SP, RBR, _, HL]),
     Instruction(0xe4, _callccnn,  [CALL, "po", _, NN]),
     Instruction(0xe5, _pushqq,    [PUSH, HL]),
-    Instruction(0xe6, _andan,     [AND, A, _, N]),
+    Instruction(0xe6, _andan,     [AND, A, _, N], [AND, N]),
     Instruction(0xe7, _rstp,      [RST, "20"]),
     Instruction(0xe8, _retcc,     [RET, "pe"]),
     Instruction(0xe9, _jphl,      [JP, LBR, HL, RBR]),
