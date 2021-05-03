@@ -80,8 +80,9 @@ void executeCode(ubyte[] code, long count, bool dumpState = true) {
     prevState = state.clone();
 
     foreach(i; 0..count) {
-        cpu.execute();
+        auto instr = cpu.execute();
         if(dumpState) {
+            writefln("%s", .toString(instr.tokens));
             writefln("%s", cpu.state);
         }
     }
@@ -101,15 +102,16 @@ void test(string source, ubyte[] code) {
     // Assemble source
     assembler.reset();
     auto aLines = assembler.encode(source);
-    writefln("aLines = %s", aLines);
+    //writefln("aLines = %s", aLines);
     assert(aLines.length==sourceLines.length,
         "aLines.length = %s, sourceLines.length = %s".format(aLines.length, sourceLines.length));
     auto encoded = extractCode(aLines);
+    //writefln("code == %s", encoded);
     assert(encoded == code, "%s != %s".format(encoded, code));
 
     // Disassemble code
     auto dLines = disassembler.decode(code, 0);
-    writefln("dLines = %s", dLines);
+    //writefln("dLines = %s", dLines);
     assert(dLines.length==sourceLines.length);
     foreach(i, l; dLines) {
         assert(concatAndRemoveSpace(l.tokens) == removeSpace(sourceLines[i]),
@@ -119,13 +121,19 @@ void test(string source, ubyte[] code) {
     // Execute
     executeCode(code, sourceLines.length);
 }
-void testFlags(void function() preState, string[] source, State.Flag[] expectSet, State.Flag[] expectClear) {
+void test(void function() preState,
+          string[] source,
+          State.Flag[] expectSet,
+          State.Flag[] expectClear,
+          void function() postAssert = null)
+{
 
     foreach(src; source) {
         cpu.reset();
-        preState();
-
         assembler.reset();
+
+        if(preState) preState();
+
         auto aLines = assembler.encode(src);
         auto code = extractCode(aLines);
         string[] sourceLines = getSourceLines(src);
@@ -134,6 +142,7 @@ void testFlags(void function() preState, string[] source, State.Flag[] expectSet
 
         assertFlagsSet(expectSet);
         assertFlagsClear(expectClear);
+        if(postAssert) postAssert();
     }
 }
 

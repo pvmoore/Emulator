@@ -61,8 +61,8 @@ public:
     ushort HL1;
 
     // maskable interrupt flipflops
-    bool IFF1 = true; // should be false?
-    bool IFF2 = true; // should be false?
+    bool IFF1 = true; // should be false at reset?
+    bool IFF2 = true; // should be false at reset?
 
     void reset() {
         AF = BC = DE = HL = IX = IY = SP = PC = 0;
@@ -122,8 +122,8 @@ public:
             (flag(Flag.N) ? "N" : "-") ~
             (flag(Flag.C) ? "C" : "-");
 
-        return "[%04x] %s (A:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x I:%02x R:%02x) BC:%04x, DE:%04x, HL:%04x SP:%04x"
-            .format(PC, flags, A, B, C, D, E, H, L, I, R, BC, DE, HL, SP);
+        return "[%04x] %s AF:%04x BC:%04x DE:%04x HL:%04x SP:%04x I:%02x R:%02x IFF:%b,%b"
+            .format(PC, flags, AF, BC, DE, HL, SP, I, R, IFF1, IFF2);
     }
 
     ubyte getReg8(Reg r) {

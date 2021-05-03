@@ -9,13 +9,13 @@ final class Disassembler {
         this.decoding = new Decoder.Decoding();
     }
     Line[] decode(ubyte[] code, uint pc, int offset = 0) {
-        writefln("Running disassembler ...");
-        writefln("code length = %s", code.length);
+        log("Running disassembler ...");
+        log("code length = %s", code.length);
 
         Line[] lines;
 
         while(offset < code.length.as!int) {
-            writefln("%s %s", offset, code.length.as!int);
+            log("%s %s", offset, code.length.as!int);
             lines ~= Line(pc);
             auto line = &lines[$-1];
             decoding.reset();
@@ -23,7 +23,7 @@ final class Disassembler {
             decoder.decode(decoding, code[offset..$]);
 
             if(decoding.match) {
-                writefln("match %s num bytes = %s", decoding.tokens, decoding.numBytes);
+                log("match %s num bytes = %s", decoding.tokens, decoding.numBytes);
 
                 line.tokens = decoding.tokens;
                 line.code   = code[offset..offset+decoding.numBytes];
@@ -40,7 +40,7 @@ final class Disassembler {
                 pc     += decoding.numBytes;
                 offset += decoding.numBytes;
             } else {
-                writefln("db %02x", code[offset]);
+                log("db %02x", code[offset]);
 
                 line.tokens = ["db", "$%02x".format(code[offset])];
                 line.code   = code[offset..offset+1];
@@ -53,6 +53,10 @@ final class Disassembler {
         return lines;
     }
 private:
+    void log(A...)(string fmt, A args) {
+        if(false)
+            format(fmt, args);
+    }
     bool littleEndian;
     Decoder decoder;
     Decoder.Decoding decoding;

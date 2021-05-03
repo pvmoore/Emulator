@@ -15,7 +15,7 @@ static struct Line {
     string toString() {
         string c = code? "[%s]".format(code.toHexStringArray()) : "";
         string l = labels? "%s: ".format(.toString(labels)) : "";
-        string t = tokens? "%s".format(.toString(tokens)) : "";
+        string t = tokens? "'%s'".format(.toString(tokens)) : "";
         return "%04x: %s %s %s".format(address, l, c, t);
     }
 }

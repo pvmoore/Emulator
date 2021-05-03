@@ -33,7 +33,7 @@ void and() {
     assertFlagsClear(N, C);
 
     //-----------------------------------
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0xff;
         writeBytes(0, [0xff]);
@@ -45,7 +45,7 @@ void and() {
         [Z, PV]
     );
 
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0x00;
         writeBytes(0, [0x00]);
@@ -57,7 +57,7 @@ void and() {
         [S]
     );
 
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0x01;
         writeBytes(0, [0x01]);
@@ -97,7 +97,7 @@ void or() {
     assertFlagsClear(H, N, C);
 
     //--------------------------------
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0xff;
         writeBytes(0, [0xff]);
@@ -109,7 +109,7 @@ void or() {
         [Z, PV]
     );
 
-    testFlags({
+    test({
         state.A = 0x00;
         state.B = 0x00;
         writeBytes(0, [0x00]);
@@ -149,7 +149,7 @@ void xor() {
     assertFlagsClear(H, N, C);
 
     //--------------------------------
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0xff;
         writeBytes(0, [0xff]);
@@ -161,7 +161,7 @@ void xor() {
         [S]
     );
 
-    testFlags({
+    test({
         state.A = 0x00;
         state.B = 0xff;
         writeBytes(0, [0xff]);
@@ -201,7 +201,7 @@ void cp() {
     assertFlagsClear();
 
     //--------------------------------
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0xff;
         writeBytes(0, [0xff]);
@@ -213,7 +213,7 @@ void cp() {
         [S, C, H, PV]
     );
 
-    testFlags({
+    test({
         state.A = 0xff;
         state.B = 0x00;
         writeBytes(0, [0x00]);
@@ -225,7 +225,7 @@ void cp() {
         [Z, C, H, PV]
     );
 
-    testFlags({
+    test({
         state.A = 0xfe;
         state.B = 0xff;
         writeBytes(0, [0xff]);
@@ -237,7 +237,7 @@ void cp() {
         [Z]
     );
 
-    testFlags({
+    test({
         state.A = 0x7f;
         state.B = 0x81;
         writeBytes(0, [0x81]);

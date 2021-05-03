@@ -26,7 +26,7 @@ public:
     void setPC(ushort addr) {
         state.PC = addr;
     }
-    void execute() {
+    Instruction execute() {
         auto op     = Op(fetchByte());
         auto index  = op.byte1;
         auto table  = cast(Instruction*)&primary;
@@ -59,9 +59,10 @@ public:
         if(instruction.strategy is null) {
             throw new Exception("op %02x not implemented".format(op.byte1));
         }
-        writefln("Execute %s", instruction);
 
         instruction.execute(this, op);
+
+        return instruction;
     }
     ubyte pop() {
         return readByte(state.SP++);

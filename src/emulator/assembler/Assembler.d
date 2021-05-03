@@ -29,7 +29,7 @@ final class Assembler {
         fixups = null;
     }
     Line[] encode(string text) {
-        writefln("Running assembler ...");
+        log("Running assembler ...");
         this.text = text;
         this.lexer = new Lexer(text);
 
@@ -38,18 +38,18 @@ final class Assembler {
 
         pass1();
 
-        writefln("constants:");
+        log("constants:");
         foreach(c; constants.keys) {
-            writefln("  %s = %s", c, constants[c]);
+            log("  %s = %s", c, constants[c]);
         }
-        writefln("labels:");
+        log("labels:");
         foreach(k,v; labelToAddress) {
-            writefln("  %s: addr %s", k, v);
+            log("  %s: addr %s", k, v);
         }
 
-        writefln("fixups:");
+        log("fixups:");
         foreach(f; fixups) {
-            writefln("%s", f);
+            log("%s", f);
         }
 
         pass2();
@@ -63,6 +63,10 @@ final class Assembler {
         return addressToLine.get(pc, Line(0));
     }
 private:
+    void log(A...)(string fmt, A args) {
+        if(false)
+            format(fmt, args);
+    }
     bool littleEndian;
     Set!string dataDirectives;
     string text;
@@ -134,7 +138,7 @@ private:
             if(strings.length > 1) {
                 if(first.isOneOf("org", ".org", ".loc")) {
                     pc = convertToInt(convertToHex(strings[1]));
-                    writefln("pc = %s", pc);
+                    log("pc = %s", pc);
                     continue;
                 }
             }
@@ -170,7 +174,7 @@ private:
             if(encoding.numFixupBytes>0) {
                 uint index = encoding.fixupTokenIndex;
 
-                writefln("fixup index: %s, expression: %s", index, encoding.fixupTokens);
+                log("fixup index: %s, expression: %s", index, encoding.fixupTokens);
 
                 fixups ~= Fixup(pc, encoding.numFixupBytes, encoding.fixupTokens);
             }
@@ -196,7 +200,7 @@ private:
             auto numBytes = f.numBytes;
 
             uint value = exprParser.parse(convertNumbersToInt(f.expressionTokens));
-            //writefln("fixup address %04x value = %s", f.address, value);
+            //log("fixup address %04x value = %s", f.address, value);
             if(numBytes==1) {
                 line.code[$-1] = value.as!ubyte;
             } else if(numBytes==2) {
@@ -217,16 +221,16 @@ private:
         lineNumber = tokens[pos].line;
         bool startsOnMargin = tokens[pos].firstColumn;
 
-        writefln("--------------");
-        writefln("■ Line %s", lineNumber);
-        writefln("--------------");
+        log("--------------");
+        log("■ Line %s", lineNumber);
+        log("--------------");
         string[] strings;
         while(pos<tokens.length && tokens[pos].line == lineNumber) {
             string str = tokens[pos].text(text);
             strings ~= str;
             pos++;
         }
-        writefln("  %s", strings);
+        log("  %s", strings);
         return tuple(strings, startsOnMargin);
     }
 
@@ -243,6 +247,9 @@ private:
         if(dec[0]=='$' || dec[0]=='&') {
             return dec[1..$].toLower();
         }
+        if(dec.length>2 && dec[0]=='0' && dec[1]=='x') {
+            return dec[2..$].toLower();
+        }
         import std.conv;
         return to!string(to!uint(dec), 16);
     }
@@ -256,6 +263,7 @@ private:
     }
     bool isNumber(string value) {
         if(value[0]=='$' || value[0]=='&') return true;
+        if(value.length>2 && value[0]=='0' && value[1]=='x') return true;
         if(value[0]=='-') value = value[1..$];
         return value[0]>='0' && value[0]<='9';
     }

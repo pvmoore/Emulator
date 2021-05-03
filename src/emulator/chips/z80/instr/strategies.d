@@ -573,36 +573,6 @@ final class INCss : Strategy {
         }
     }
 }
-// final class INC_REG : Strategy {
-//     private Reg reg;
-//     bool indirect;
-//     this(Reg reg, bool indirect) {
-//         this.reg = reg;
-//         this.indirect = indirect;
-//     }
-//     /**
-//      * inc (reg16)   // indirect = true
-//      * inc reg16     // indirect = false
-//      *
-//      * Flags: None
-//      */
-//     override void execute(Z80 cpu, Op op) const {
-//         auto s = cpu.state;
-//         auto r = s.getReg16(reg);
-//         if(indirect) {
-//             // inc byte
-//             auto value = (cpu.readByte(r) + 1).as!ubyte;
-//             cpu.writeByte(r, value);
-
-//             s.flagS(value.isNeg());
-//             s.flagZ(value==0);
-//             s.flagH(value==0x10); // check this
-//             s.flagN(false);
-//         } else {
-//             s.setReg16(reg, (r+1).as!ushort);
-//         }
-//     }
-// }
 final class DECss : Strategy {
     /**
      *  00ss1011
@@ -628,14 +598,14 @@ final class DECss : Strategy {
 final class RLA : Strategy {
     /**
      * Roll A left 1 bit
-     * Copy sign bit to carry flag and carry to bit 0
+     * Copy bit 7 to carry flag and carry to bit 0
      *
      * Flags: C,H,N
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
         auto bit7 = isBitSet(s.A, 7);
-        s.A = ((s.A<<1) | s.flagC() ? 1 : 0).as!ubyte;
+        s.A = ((s.A<<1) | (s.flagC() ? 1 : 0)).as!ubyte;
         s.flagH(false);
         s.flagN(false);
         s.flagC(bit7);
@@ -651,7 +621,7 @@ final class RRA : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
         auto bit0 = isBitSet(s.A, 0);
-        s.A = ((s.A>>>1) | s.flagC() ? 0x80 : 0).as!ubyte;
+        s.A = ((s.A>>>1) | (s.flagC() ? 0x80 : 0)).as!ubyte;
         s.flagH(false);
         s.flagN(false);
         s.flagC(bit0);
@@ -660,14 +630,14 @@ final class RRA : Strategy {
 final class RLCA : Strategy {
     /**
      * Roll A left 1 bit
-     * Copy sign bit to carry flag and also to bit 0
+     * Copy bit 7 to carry flag and also to bit 0
      *
      * Flags: C,H,N
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
         auto bit7 = isBitSet(s.A, 7);
-        s.A = ((s.A<<1) | bit7 ? 1 : 0).as!ubyte;
+        s.A = ((s.A<<1) | (bit7 ? 1 : 0)).as!ubyte;
         s.flagH(false);
         s.flagN(false);
         s.flagC(bit7);
@@ -683,7 +653,7 @@ final class RRCA : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
         auto bit0 = isBitSet(s.A, 0);
-        s.A = ((s.A>>>1) | bit0 ? 0x80 : 0).as!ubyte;
+        s.A = ((s.A>>>1) | (bit0 ? 0x80 : 0)).as!ubyte;
         s.flagH(false);
         s.flagN(false);
         s.flagC(bit0);
@@ -1094,11 +1064,42 @@ final class DAA : Strategy {
      *
      * Conditionally adjust A for BCD add/subtract.
      *
-     * Flags: todo
+     * Flags: S, Z, H, C, PV
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        todo();
+
+        auto c = s.flagC();
+        auto h = s.flagH();
+        auto n = s.flagN();
+        auto ah = s.A>>>4;
+        auto al = s.A&0xf;
+        auto add = 0;
+
+        if(al > 0x9 || h) {
+            add += 0x06;
+        }
+        if(ah > 0x9 || c) {
+            add += 0x60;
+        }
+        if(n) {
+            s.A = (s.A - add).as!ubyte;
+        } else {
+            s.A = (s.A + add).as!ubyte;
+        }
+
+        if(c || ah > 9) {
+            s.flagC(true);
+        }
+        if(n && h) {
+            s.flagH(al < 0x06);
+        } else {
+            s.flagH(al > 0x09);
+        }
+
+        s.updateS(s.A);
+        s.updateZ(s.A);
+        s.updateP(s.A);
     }
 }
 final class CPL : Strategy {
