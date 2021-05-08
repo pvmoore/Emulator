@@ -17,7 +17,7 @@
             "label": "**** DEBUG ****",
             "type": "shell",
             "windows": {
-                "command": "chcp 65001 && dub run --build=debug --config=test --compiler=dmd --arch=x86_64 --parallel"
+                "command": "run_debug_build.bat test"
             },
 
             "presentation": {
@@ -30,7 +30,7 @@
             "label": "**** RELEASE ****",
             "type": "shell",
             "windows": {
-                "command": "chcp 65001 && dub run --build=release --config=test --compiler=ldc2 --arch=x86_64 --parallel"
+                "command": "run_release_build.bat test"
             },
             "presentation": {
                 "reveal": "always",
@@ -42,7 +42,7 @@
             "label": "**** Unit Test ****",
             "type": "shell",
             "windows": {
-                "command": "chcp 65001 && dub run --build=unittest --config=test --compiler=dmd --arch=x86_64 --parallel"
+                "command": "run_unittest_build.bat test"
             },
             "group": {
                 "kind": "build",

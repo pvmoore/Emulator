@@ -61,6 +61,8 @@ final class Z80Encoder : Encoder {
             enc.fixupTokens = match.fixupTokens;
 
             //writefln("  %s fixup num:%s", enc.temp[0..i].map!(it=>"%02x".format(it).array), enc.numFixupBytes);
+        } else {
+            writefln("no match found: %s", asmTokens);
         }
     }
 private:

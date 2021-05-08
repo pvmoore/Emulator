@@ -892,7 +892,9 @@ final class JRe : Strategy {
         byte e = cpu.fetchByte();
         bool taken;
         final switch(type) with(BranchType) {
-            case JR: taken = true; break;
+            case JR:
+                taken = true;
+                break;
             case DJNZ:
                 s.B = (s.B-1).as!ubyte;
                 taken = s.B!=0;
@@ -912,7 +914,7 @@ final class JRe : Strategy {
 
         }
         if(taken) {
-            s.PC = ((s.PC).as!short + e).as!ushort;
+            s.PC = ((s.PC-2).as!short + e).as!ushort;
         }
     }
 }
@@ -1009,9 +1011,16 @@ final class JP_HL : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
+        auto addr = op.byte1 == 0xdd ? cpu.readWord(s.IX) :
+                    op.byte1 == 0xfd ? cpu.readWord(s.IY) :
+                                       cpu.readWord(s.HL);
 
-        // 4 clocks
-        s.PC = s.HL;
+        writefln("jump %04x", addr);
+
+        // 4 clocks (hl)
+        // 8 clocks (ix) or (iy)
+
+        s.PC = addr;
     }
 }
 

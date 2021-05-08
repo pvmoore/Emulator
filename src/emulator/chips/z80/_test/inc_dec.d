@@ -61,7 +61,9 @@ void inc() {
     // ---------------------------
 
     state.A = 0xfe;
-    test("inc a", [0x3c]);
+    test("
+        inc a
+    ", [0x3c]);
 
     assertFlagsSet(S);
     assertFlagsClear(N, Z, H, PV, C);
@@ -70,7 +72,9 @@ void inc() {
 
     state.A = 0x7f;
     state.flagC(true);
-    test("inc a", [0x3c]);
+    test("
+        inc a
+    ", [0x3c]);
 
     assertFlagsSet(S, PV, C, H);
     assertFlagsClear(N, Z);
@@ -78,7 +82,9 @@ void inc() {
     // ---------------------------
 
     state.A = 0xf;
-    test("inc a", [0x3c]);
+    test("
+        inc a
+    ", [0x3c]);
 
     assertFlagsSet(H);
     assertFlagsClear(S, N, Z, PV);
@@ -136,7 +142,9 @@ void dec() {
     // ---------------------------
 
     state.A = 0x01;
-    test("dec a", [0x3d]);
+    test("
+        dec a
+    ", [0x3d]);
 
     assertFlagsSet(Z, N);           // zero
     assertFlagsClear(S, H, PV, C);
@@ -144,7 +152,9 @@ void dec() {
     // ---------------------------
 
     state.A = 0x00;
-    test("dec a", [0x3d]);
+    test("
+        dec a
+    ", [0x3d]);
 
     assertFlagsSet(S, N, H);           // zero
     assertFlagsClear(PV, C);
@@ -152,7 +162,9 @@ void dec() {
     // ---------------------------
 
     state.A = 0x80;
-    test("dec a", [0x3d]);
+    test("
+        dec a
+    ", [0x3d]);
 
     assertFlagsSet(PV, N, H);           // zero
     assertFlagsClear(S, C, Z);

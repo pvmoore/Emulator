@@ -61,8 +61,57 @@ void daa() {
     test(null, [" add a, $01\n daa"], [], [], {});
 
 }
-void scf() {
+void scf_ccf() {
     cpu.reset();
+
+    test("
+        scf
+    ", [0x37]);
+
+    assertFlagsSet(C);
+    assertFlagsClear(H, N);
+
+    state.flagC(true);
+
+    test("
+        ccf
+    ", [0x3f]);
+
+    assertFlagsSet(H);
+    assertFlagsClear(C, N);
+}
+void ex_exx() {
+    cpu.reset();
+
+    state.AF = 0x10;
+    state.AF1 = 0x20;
+    state.DE = 0x30;
+    state.HL = 0x40;
+
+    test("
+        ex af, af1
+        ex de, hl
+
+    ", [0x08, 0xeb]);
+
+    assertFlagsClear(allFlags());
+    assert(state.AF == 0x20);
+    assert(state.AF1 == 0x10);
+    assert(state.DE == 0x40);
+    assert(state.HL == 0x30);
+
+    state.BC = 0x01; state.BC1 = 0x10;
+    state.DE = 0x02; state.DE1 = 0x20;
+    state.HL = 0x03; state.HL1 = 0x30;
+
+    test("
+        exx
+    ", [0xd9]);
+
+    assertFlagsClear(allFlags());
+    assert(state.BC == 0x10); assert(state.BC1 == 0x01);
+    assert(state.DE == 0x20); assert(state.DE1 == 0x02);
+    assert(state.HL == 0x30); assert(state.HL1 == 0x03);
 }
 
 
@@ -72,6 +121,7 @@ nop();
 cpl();
 ccf();
 daa();
-scf();
+scf_ccf();
+ex_exx();
 
 } // unittest

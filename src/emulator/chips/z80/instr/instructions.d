@@ -292,7 +292,7 @@ Instruction[256] primary = [
 // row d
     Instruction(0xd0, _retcc,     [RET, "nc"]),
     Instruction(0xd1, _popqq,     [POP, DE]),
-    Instruction(0xd2, _jpccnn,    [JP, "nc", NN]),
+    Instruction(0xd2, _jpccnn,    [JP, "nc", _, NN]),
     Instruction(0xd3, _outna,     [OUT, LBR, N, RBR, _, A]),
     Instruction(0xd4, _callccnn,  [CALL, "nc", _, NN]),
     Instruction(0xd5, _pushqq,    [PUSH, DE]),
@@ -318,7 +318,7 @@ Instruction[256] primary = [
     Instruction(0xe8, _retcc,     [RET, "pe"]),
     Instruction(0xe9, _jphl,      [JP, LBR, HL, RBR]),
     Instruction(0xea, _jpccnn,    [JP, "pe", _, NN]),
-    Instruction(0xeb, _exdehl,    [CALL, DE, _, HL]),
+    Instruction(0xeb, _exdehl,    ["ex", DE, _, HL]),
     Instruction(0xec, _callccnn,  [CALL, "pe", _, NN]),
     Instruction(0xed),                              // ED group
     Instruction(0xee, _xoran,     [XOR, A, _, N]),

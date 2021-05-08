@@ -44,7 +44,7 @@ final class Assembler {
         }
         log("labels:");
         foreach(k,v; labelToAddress) {
-            log("  %s: addr %s", k, v);
+            log("  %s: addr = %s", k, v);
         }
 
         log("fixups:");
@@ -65,7 +65,7 @@ final class Assembler {
 private:
     void log(A...)(string fmt, A args) {
         if(false)
-            format(fmt, args);
+            writefln(format(fmt, args));
     }
     bool littleEndian;
     Set!string dataDirectives;
@@ -144,17 +144,22 @@ private:
             }
 
             // label
-            if(first.endsWith(":")) {
-                string label = first[0..$-1];
+            bool _handleLabel() {
+                string label = first.endsWith(":") ? first[0..$-1] : first;
+                log("label: %s", label);
                 line.labels ~= label;
                 labelToAddress[label] = pc;
-                if(length==1) continue;
-                if(dataDirectives.contains(second)) continue;
-            } else if(startsOnMargin) {
-                labelToAddress[first] = pc;
-                line.labels ~= first;
-                if(length==1) continue;
-                if(dataDirectives.contains(second)) continue;
+
+                if(length==1) return false;
+                if(dataDirectives.contains(second)) return false;
+
+                // Remove the label token
+                strings = strings[1..$];
+
+                return true;
+            }
+            if(startsOnMargin || first.endsWith(":")) {
+                if(!_handleLabel()) continue;
             }
 
             // if we get here then this is an opcode

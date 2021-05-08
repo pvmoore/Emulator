@@ -21,7 +21,10 @@ enum {
     Z   = State.Flag.Z,     // zero
     S   = State.Flag.S      // sign
 }
-
+void resetInstructionData() {
+    ubyte[] bytes = new ubyte[100];
+    writeBytes(0x1000, bytes);
+}
 void writeBytes(uint addr, ubyte[] bytes) {
     foreach(i; 0..cast(uint)bytes.length) {
         bus.write(addr + i, bytes[i]);
@@ -42,6 +45,9 @@ State.Flag[] allFlags() {
 }
 string removeSpace(string s) {
     string buf;
+    if(s.contains(';')) {
+        s = s[0..From!"std.string".indexOf(s, ";")];
+    }
     foreach(ch; s) {
         if(ch>' ') buf ~= ch;
     }
@@ -97,7 +103,7 @@ void execute(string source) {
 void test(string source, ubyte[] code) {
 
     string[] sourceLines = getSourceLines(source);
-    writefln("source lines = %s", sourceLines);
+    //writefln("source lines = %s", sourceLines);
 
     // Assemble source
     assembler.reset();
@@ -133,6 +139,9 @@ void test(void function() preState,
         assembler.reset();
 
         if(preState) preState();
+
+        // Avoid instructions looking like labels
+        src = "\t" ~ src;
 
         auto aLines = assembler.encode(src);
         auto code = extractCode(aLines);

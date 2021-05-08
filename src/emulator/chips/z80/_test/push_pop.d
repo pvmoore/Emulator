@@ -34,8 +34,4 @@ void pushPop() {
 setup();
 pushPop();
 
-// state.updateV(0x7f, 0x81, 0xfe);
-// state.updateH(0x7f, 0x81, 0xfe);
-// writefln("PV = %s", state);
-
 } // unit test

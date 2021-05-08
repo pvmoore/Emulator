@@ -36,6 +36,7 @@ void and() {
     test({
         state.A = 0xff;
         state.B = 0xff;
+        state.HL = 0x0000,
         writeBytes(0, [0xff]);
     },
         ["and a, b",
@@ -48,11 +49,13 @@ void and() {
     test({
         state.A = 0xff;
         state.B = 0x00;
+        state.HL = 0x0000,
         writeBytes(0, [0x00]);
     },
         ["and a, b",
         "and a, $00",
-        "and a, (hl)"],
+        "and a, (hl)"
+        ],
         [Z, PV],
         [S]
     );
@@ -60,6 +63,7 @@ void and() {
     test({
         state.A = 0xff;
         state.B = 0x01;
+        state.HL = 0x0000,
         writeBytes(0, [0x01]);
     },
         ["and a, b",
