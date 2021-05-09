@@ -73,7 +73,8 @@ public:
     void push(ubyte value) {
         writeByte(--state.SP, value);
     }
-    void pushWord(ushort value) {
+    void pushWord(uint value) {
+        // push hi, lo
         push((value>>>8) & 0xff);
         push(value & 0xff);
     }

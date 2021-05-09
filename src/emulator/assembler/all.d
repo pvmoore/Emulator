@@ -8,6 +8,7 @@ import std.algorithm.iteration  : map, joiner, filter;
 import std.range                : array;
 import std.string               : toLower;
 import std.typecons             : Tuple, tuple;
+import std.conv                 : to;
 
 import common;
 import common.parser;

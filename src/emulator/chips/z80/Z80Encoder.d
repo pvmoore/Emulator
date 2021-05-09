@@ -107,12 +107,25 @@ private:
     Match match;
 
     void findInstruction(string[] tokens) {
+        handleSpecialCases(tokens);
+
         string opcode = tokens[0];
 
         foreach(i, h; hashes) {
             if(checkHash(h, opcode, tokens)) {
                 match.hashByte = prefixes[i];
                 return;
+            }
+        }
+    }
+    void handleSpecialCases(string[] tokens) {
+        // rst - convert decimal to hex and remove $ or &
+        if(tokens.length==2 && "rst"==tokens[0]) {
+            auto n = tokens[1];
+            if(n.startsWith("$") || n.startsWith("&")) {
+                tokens[1] = tokens[1][1..$];
+            } else if(!n.isOneOf("10", "18", "20", "28", "30", "38")) {
+                tokens[1] = "%02x".format(tokens[1].to!int(10));
             }
         }
     }

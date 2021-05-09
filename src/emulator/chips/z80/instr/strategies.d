@@ -111,7 +111,7 @@ final class Nop : Strategy {
      *  Flags: None
      */
     override void execute(Z80 cpu, Op op) const {
-        // do nothing
+        // do nothing for 4 clocks
     }
 }
 final class LD_BC_A : Strategy {
@@ -286,19 +286,21 @@ final class ALG_a_r : Strategy {
         switch(ccc) {
             case 0:
                 // add (4 clocks)
+                s.A = (s.A + src).as!ubyte;
                 s.flagS(s.A.isNeg());
                 s.flagZ(s.A==0);
-                s.flagH(((before&0xf) + (src&0xf)) > 0xf);
+                s.updateH(before, src, s.A);
                 s.flagPV(before+src > 0xff);
                 s.flagN(false);
                 s.flagC(before+src > 0xff);
                 break;
             case 1:
                 // adc (4 clocks)
-                s.A = src + s.flagC() ? 1 : 0;
+                s.A = (s.A + src + (s.flagC() ? 1 : 0)).as!ubyte;
+                writefln("adc %02x %02x %02x %s", before, src, s.A, s.flagC());
                 s.flagS(s.A.isNeg());
                 s.flagZ(s.A==0);
-                s.flagH(!before.isBitSet(4));
+                s.updateH(before, src, s.A);
                 s.flagPV(before+src > 0xff);
                 s.flagN(false);
                 s.flagC(before+src > 0xff);
@@ -309,7 +311,7 @@ final class ALG_a_r : Strategy {
                 s.A = (src + (s.flagC() ? 1 : 0)).as!ubyte;
                 s.flagS(s.A.isNeg());
                 s.flagZ(s.A==0);
-                s.flagH((before&0b1_0000) && (s.A&0b1000)); // set if borrow from bit 4 - check this
+                s.updateH(before, src, s.A);
                 s.flagPV(before+src <= 0xff);
                 s.flagN(true);
                 s.flagC(src > before); // set if borrow - check this
@@ -319,7 +321,7 @@ final class ALG_a_r : Strategy {
                 s.A = (s.A - src - (s.flagC() ? 1 : 0)).as!ubyte;
                 s.flagS(s.A.isNeg());
                 s.flagZ(s.A==0);
-                s.flagH((before&0b1_0000) && (s.A&0b1000)); // set if borrow from bit 4 - check this
+                s.updateH(before, src, s.A);
                 s.flagPV(before+src <= 0xff);
                 s.flagN(true);
                 s.flagC(src > before); // set if borrow - check this
@@ -710,7 +712,7 @@ final class ADD_a_n : Strategy {
 
         s.flagS(s.A.isNeg());
         s.flagZ(s.A==0);
-        s.flagH(!before.isBitSet(4) && s.A.isBitSet(4));    // check this
+        s.updateH(before, n, s.A);
         s.flagPV(before+n > 0xff);
         s.flagN(false);
         s.flagC(before+n > 0xff);
@@ -729,10 +731,11 @@ final class ADC_a_n : Strategy {
         // (7 clocks)
 
         s.A = (s.A + n + (s.flagC() ? 1: 0)).as!ubyte;
+        writefln("%02x %02x", before, s.A);
 
         s.flagS(s.A.isNeg());
         s.flagZ(s.A==0);
-        s.flagH(!before.isBitSet(4) && s.A.isBitSet(4));    // check this
+        s.updateH(before, n, s.A);
         s.flagPV(before+n > 0xff);
         s.flagN(false);
         s.flagC(before+n > 0xff);
@@ -754,7 +757,7 @@ final class SUB_a_n : Strategy {
 
         s.flagS(s.A.isNeg());
         s.flagZ(s.A==0);
-        s.flagH(before.isBitSet(4) && !s.A.isBitSet(4));    // check this
+        s.updateH(before, n, s.A);
         s.flagPV(before-n > 0xff);
         s.flagN(true);
         s.flagC(before-n > 0xff);
@@ -776,7 +779,7 @@ final class SBC_a_n : Strategy {
 
         s.flagS(s.A.isNeg());
         s.flagZ(s.A==0);
-        s.flagH(before.isBitSet(4) && !s.A.isBitSet(4));    // check this
+        s.updateH(before, n, s.A);
         s.flagPV(before-n > 0xff);
         s.flagN(true);
         s.flagC(before-n > 0xff);
@@ -957,7 +960,7 @@ final class CALLnn : Strategy {
         ushort nn  = cpu.fetchWord();
 
         // (17 clocks)
-        cpu.pushWord(s.PC);
+        cpu.pushWord(s.PC-3);
         s.PC = nn;
     }
 }
@@ -1014,8 +1017,6 @@ final class JP_HL : Strategy {
         auto addr = op.byte1 == 0xdd ? cpu.readWord(s.IX) :
                     op.byte1 == 0xfd ? cpu.readWord(s.IY) :
                                        cpu.readWord(s.HL);
-
-        writefln("jump %04x", addr);
 
         // 4 clocks (hl)
         // 8 clocks (ix) or (iy)
@@ -1236,6 +1237,7 @@ final class HALT : Strategy {
      * Flags: None
      */
     override void execute(Z80 cpu, Op op) const {
+        // todo - Check for interrupt
         todo();
     }
 }
@@ -1305,7 +1307,9 @@ final class RSTp : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto p = (op.byte1>>>3) & 3;
+        auto p = (op.byte1>>>3) & 7;
+
+        // 11 cycles
 
         cpu.pushWord(s.PC);
         s.PC = (p*8).as!ushort;

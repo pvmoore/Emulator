@@ -3,6 +3,7 @@
 Currently emulates:
 
 - MOS 6502 processor
+- Zilog Z80 processor
 
 ## Requirements
 
