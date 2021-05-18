@@ -5,6 +5,23 @@ import emulator.chips.z80._test._tests;
 
 unittest {
 
+enum {
+    LD_A_R = [0xed, 0x5f],
+    LD_R_A = [0xed, 0x4f],
+    LD_A_I = [0xed, 0x57],
+    LD_I_A = [0xed, 0x47],
+
+    LD_BC_NN = [0xed, 0x4b],
+    LD_DE_NN = [0xed, 0x5b],
+    LD_HL_NN = [0xed, 0x6b],
+    LD_SP_NN = [0xed, 0x7b],
+
+    LD_NN_BC = [0xed, 0x43],
+    LD_NN_DE = [0xed, 0x53],
+    LD_NN_HL = [0xed, 0x63],
+    LD_NN_SP = [0xed, 0x73],
+}
+
 void ld_imm() {
     cpu.reset();
     test("
@@ -51,7 +68,7 @@ void ld_imm() {
     assert(state.L == 0x06);
     assert(state.A == 0x07);
 }
-void ld_r() {
+void ld_rrr() {
     cpu.reset();
 
     test("
@@ -357,11 +374,152 @@ void ld_indirect() {
     assert(bus.read(0x6005) == 0x60);
     assert(bus.read(0x6006) == 6);
 }
+void ld_r() {
+    cpu.reset();
+
+    state.IFF2 = true;
+    state.R = 0;
+    test("
+        ld a, r
+    ", LD_A_R);
+
+    assert(state.A == 0);
+    assertFlagsSet(Z, PV);
+    assertFlagsClear(N, H, S);
+
+    state.IFF2 = false;
+    state.R = 0x80;
+    test("
+        ld a, r
+    ", LD_A_R);
+
+    assert(state.A == 0x80);
+    assertFlagsSet(S);
+    assertFlagsClear(N, H, PV, Z);
+
+    //----------------------------------
+
+    state.F = 0;
+    state.A = 0x10;
+    test("
+        ld r, a
+    ", LD_R_A);
+
+    assert(state.R == 0x10);
+    assertFlagsClear(allFlags());
+}
+void ld_i() {
+    cpu.reset();
+
+    state.IFF2 = true;
+    state.I = 0;
+    test("
+        ld a, i
+    ", LD_A_I);
+
+    assert(state.A == 0);
+    assertFlagsSet(Z, PV);
+    assertFlagsClear(N, H, S);
+
+    state.IFF2 = false;
+    state.I = 0x80;
+    test("
+        ld a, i
+    ", LD_A_I);
+
+    assert(state.A == 0x80);
+    assertFlagsSet(S);
+    assertFlagsClear(N, H, PV, Z);
+
+    //----------------------------------
+
+    state.F = 0;
+    state.A = 0x10;
+    test("
+        ld i, a
+    ", LD_I_A);
+
+    assert(state.I == 0x10);
+    assertFlagsClear(allFlags());
+}
+void ld_rr_nn() {
+    cpu.reset();
+
+    writeBytes(0x0123, [0x01, 0x02]);
+    test("
+        ld bc, ($0123)
+    ", LD_BC_NN ~ [0x23, 0x01]);
+
+    assert(state.BC == 0x0201);
+    assertFlagsClear(allFlags());
+
+    test("
+        ld de, ($0123)
+    ", LD_DE_NN ~ [0x23, 0x01]);
+
+    assert(state.DE == 0x0201);
+    assertFlagsClear(allFlags());
+
+    // This one chooses the shorter [0x2a, 0x23, 0x01]
+    //test("
+    //    ld hl, ($0123)
+    //", LD_HL_NN ~ [0x23, 0x01]);
+
+    //assert(state.HL == 0x0201);
+    //assertFlagsClear(allFlags());
+
+    test("
+        ld sp, ($0123)
+    ", LD_SP_NN ~ [0x23, 0x01]);
+
+    assert(state.SP == 0x0201);
+    assertFlagsClear(allFlags());
+}
+void ld_nn_rr() {
+    cpu.reset();
+
+    state.BC = 0x1111;
+    state.DE = 0x2222;
+    state.HL = 0x3333;
+    state.SP = 0x4444;
+    test("
+        ld ($0123), bc
+    ", LD_NN_BC ~ [0x23, 0x01]);
+
+    assert(bus.readWord(0x0123) == 0x1111);
+    assertFlagsClear(allFlags());
+
+    test("
+        ld ($0123), de
+    ", LD_NN_DE ~ [0x23, 0x01]);
+
+    assert(bus.readWord(0x0123) == 0x2222);
+    assertFlagsClear(allFlags());
+
+    // this chooses the shorter [0x22, 0x23, 0x01]
+    // test("
+    //     ld ($0123), hl
+    // ", LD_NN_HL ~ [0x23, 0x01]);
+
+    // assert(bus.readWord(0x0123) == 0x3333);
+    // assertFlagsClear(allFlags());
+
+    test("
+        ld ($0123), sp
+    ", LD_NN_SP ~ [0x23, 0x01]);
+
+    assert(bus.readWord(0x0123) == 0x4444);
+    assertFlagsClear(allFlags());
+}
 
 setup();
 
 ld_imm();
-ld_r();
+ld_rrr();
 ld_indirect();
+ld_r();
+ld_i();
+ld_rr_nn();
+ld_nn_rr();
 
 } //unittest

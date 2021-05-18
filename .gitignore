@@ -24,3 +24,5 @@ node_modules/
 # Visual studio project files
 *.vcxproj*
 *.sln
+
+__temp.d

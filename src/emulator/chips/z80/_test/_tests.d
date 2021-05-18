@@ -1,12 +1,13 @@
 module emulator.chips.z80._test._tests;
 
 import emulator.chips.z80.all;
-import emulator.component.Memory;
 import std.string : lineSplitter, strip;
 
 __gshared Z80 cpu;
 __gshared Memory mem;
 __gshared Bus bus;
+__gshared Z80Pins pins;
+__gshared Z80Ports ports;
 __gshared Assembler assembler;
 __gshared Disassembler disassembler;
 __gshared State state;
@@ -29,6 +30,18 @@ void writeBytes(uint addr, ubyte[] bytes) {
     foreach(i; 0..cast(uint)bytes.length) {
         bus.write(addr + i, bytes[i]);
     }
+}
+void writePort(ubyte port, ubyte value) {
+    pins.setIOReq(true);
+    ports.write(port, value);
+    pins.setMReq(true);
+}
+ubyte readPort(ubyte port) {
+    pins.setIOReq(true);
+    ubyte value;
+    ports.read(port, value);
+    pins.setMReq(true);
+    return value;
 }
 void assertFlagsSet(State.Flag[] flags...) {
     foreach(f; flags) {
@@ -67,17 +80,18 @@ string[] getSourceLines(string source) {
                                .array;
 }
 void setup() {
-    mem = new Memory(65536);
-    bus = new Bus().add(mem);
     cpu = new Z80();
-    assert(cpu);
-    assert(mem);
-    assert(bus);
+
+    ports = new Z80Ports(cpu.pins);
+    mem = new Memory(65536);
+    bus = new Bus().add(ports).add(mem);
+
     cpu.addBus(bus);
 
     assembler = createZ80Assembler();
     disassembler = createZ80Disassembler();
     state = cpu.state;
+    pins = cpu.pins;
 }
 void executeCode(ubyte[] code, long count, bool dumpState = true) {
     cpu.load(0x1000, code);

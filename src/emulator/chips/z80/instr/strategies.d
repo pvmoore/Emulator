@@ -30,6 +30,8 @@ m       Identifies any of r, (HL), (IX+d) or (IY+d)
 
 */
 
+__gshared immutable Reg[8] REGS = [Reg.B, Reg.C, Reg.D, Reg.E, Reg.H, Reg.L, Reg.HL, Reg.A];
+
 abstract class Strategy {
     void execute(Z80 cpu, Op op) const;
 }
@@ -282,49 +284,53 @@ final class ALG_a_r : Strategy {
         auto ccc    = (op.byte1>>>3) & 7;
         auto src    = rrr==Reg.HL ? cpu.readByte(s.HL) : s.getReg8(rrr);
         auto before = s.A;
+        auto c      = s.flagC() ? 1 : 0;
+        uint after;
 
         switch(ccc) {
             case 0:
                 // add (4 clocks)
-                s.A = (s.A + src).as!ubyte;
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
-                s.updateH(before, src, s.A);
-                s.flagPV(before+src > 0xff);
+                after = s.A + src;
+                s.A = after.as!ubyte;
+                s.updateS(s.A);
+                s.updateZ(s.A);
+                s.updateH(before, src, after);
+                s.updateV(before, src, after);
                 s.flagN(false);
-                s.flagC(before+src > 0xff);
+                s.flagC(after > 0xff);
                 break;
             case 1:
                 // adc (4 clocks)
-                s.A = (s.A + src + (s.flagC() ? 1 : 0)).as!ubyte;
-                writefln("adc %02x %02x %02x %s", before, src, s.A, s.flagC());
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
-                s.updateH(before, src, s.A);
-                s.flagPV(before+src > 0xff);
+                after = s.A + src + c;
+                s.A = after.as!ubyte;
+                s.updateS(s.A);
+                s.updateZ(s.A);
+                s.updateH(before, src+c, after);
+                s.updateV(before, src+c, after);
                 s.flagN(false);
-                s.flagC(before+src > 0xff);
+                s.flagC(after > 0xff);
                 break;
             case 2:
                 // sub (4 clocks)
-                s.A = (s.A - src).as!ubyte;
-                s.A = (src + (s.flagC() ? 1 : 0)).as!ubyte;
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
-                s.updateH(before, src, s.A);
-                s.flagPV(before+src <= 0xff);
+                after = s.A - src;
+                s.A = after.as!ubyte;
+                s.updateS(s.A);
+                s.updateZ(s.A);
+                s.updateH(before, src, after);
+                s.updateV(before, src, after);
                 s.flagN(true);
-                s.flagC(src > before); // set if borrow - check this
+                s.flagC(after > 0xff);
                 break;
             case 3:
                 // sbc (4 clocks)
-                s.A = (s.A - src - (s.flagC() ? 1 : 0)).as!ubyte;
-                s.flagS(s.A.isNeg());
-                s.flagZ(s.A==0);
-                s.updateH(before, src, s.A);
-                s.flagPV(before+src <= 0xff);
+                after = s.A - src - c;
+                s.A = after.as!ubyte;
+                s.updateS(s.A);
+                s.updateZ(s.A);
+                s.updateH(before, src+c, after);
+                s.updateV(before, src+c, after);
                 s.flagN(true);
-                s.flagC(src > before); // set if borrow - check this
+                s.flagC(after > 0xff);
                 break;
             case 4:
                 // and (4 clocks)
@@ -358,14 +364,14 @@ final class ALG_a_r : Strategy {
                 break;
             default:
                 // cp (4 clocks)
-                uint result = (s.A - src);
-                ubyte after = result.as!ubyte;
-                s.updateS(after);
-                s.updateZ(after);
+                after = s.A - src;
+                ubyte a = after.as!ubyte;
+                s.updateS(a);
+                s.updateZ(a);
                 s.updateH(s.A, src, after);
                 s.updateV(s.A, src, after);
                 s.flagN(true);
-                s.flagC(result > 0xff);
+                s.flagC(after > 0xff);
                 break;
         }
     }
@@ -707,15 +713,16 @@ final class ADD_a_n : Strategy {
         auto s       = cpu.state;
         ubyte n      = cpu.fetchByte();
         ubyte before = s.A;
+        uint after   = s.A + n;
 
-        s.A = (s.A + n).as!ubyte;
+        s.A = after.as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
-        s.updateH(before, n, s.A);
-        s.flagPV(before+n > 0xff);
+        s.updateS(s.A);
+        s.updateZ(s.A);
+        s.updateH(before, n, after);
+        s.updateV(before, n, after);
         s.flagN(false);
-        s.flagC(before+n > 0xff);
+        s.flagC(after > 0xff);
     }
 }
 final class ADC_a_n : Strategy {
@@ -727,18 +734,19 @@ final class ADC_a_n : Strategy {
         auto s       = cpu.state;
         ubyte n      = cpu.fetchByte();
         ubyte before = s.A;
+        ubyte c      = s.flagC() ? 1 : 0;
+        uint after   = s.A + n + c;
 
         // (7 clocks)
 
-        s.A = (s.A + n + (s.flagC() ? 1: 0)).as!ubyte;
-        writefln("%02x %02x", before, s.A);
+        s.A = after.as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
-        s.updateH(before, n, s.A);
-        s.flagPV(before+n > 0xff);
+        s.updateS(s.A);
+        s.updateZ(s.A);
+        s.updateH(before, n+c, after);
+        s.updateV(before, n+c, after);
         s.flagN(false);
-        s.flagC(before+n > 0xff);
+        s.flagC(after > 0xff);
     }
 }
 final class SUB_a_n : Strategy {
@@ -750,17 +758,18 @@ final class SUB_a_n : Strategy {
         auto s       = cpu.state;
         ubyte n      = cpu.fetchByte();
         ubyte before = s.A;
+        uint after   = s.A - n;
 
         // (7 clocks)
 
-        s.A = (s.A - n).as!ubyte;
+        s.A = after.as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
-        s.updateH(before, n, s.A);
-        s.flagPV(before-n > 0xff);
+        s.updateS(s.A);
+        s.updateZ(s.A);
+        s.updateH(before, n, after);
+        s.updateV(before, n, after);
         s.flagN(true);
-        s.flagC(before-n > 0xff);
+        s.flagC(after > 0xff);
     }
 }
 final class SBC_a_n : Strategy {
@@ -771,18 +780,20 @@ final class SBC_a_n : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s       = cpu.state;
         ubyte n      = cpu.fetchByte();
+        ubyte c      = s.flagC() ? 1 : 0;
         ubyte before = s.A;
+        uint after   = before - n - c;
 
         // (7 clocks)
 
-        s.A = (s.A - n - (s.flagC() ? 1 : 0)).as!ubyte;
+        s.A = after.as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
-        s.updateH(before, n, s.A);
-        s.flagPV(before-n > 0xff);
+        s.updateS(s.A);
+        s.updateZ(s.A);
+        s.updateH(before, n+c, after);
+        s.updateV(before, n+c, after);
         s.flagN(true);
-        s.flagC(before-n > 0xff);
+        s.flagC(after > 0xff);
     }
 }
 final class AND_a_n : Strategy {
@@ -794,10 +805,11 @@ final class AND_a_n : Strategy {
         auto s       = cpu.state;
         ubyte n      = cpu.fetchByte();
         ubyte before = s.A;
+        uint after   = before & n;
 
         // (7 clocks)
 
-        s.A = (s.A & n).as!ubyte;
+        s.A = after.as!ubyte;
 
         s.updateS(s.A);
         s.updateZ(s.A);
@@ -862,15 +874,15 @@ final class CP_a_n : Strategy {
 
         // (7 clocks)
 
-        uint temp = (s.A - n);
-        ubyte after = temp.as!ubyte;
+        uint result = s.A - n;
+        ubyte a = result.as!ubyte;
 
-        s.updateS(after);
-        s.updateZ(after);
-        s.updateH(s.A, n, after);
-        s.updateV(s.A, n, after);
+        s.updateS(a);
+        s.updateZ(a);
+        s.updateH(s.A, n, result);
+        s.updateV(s.A, n, result);
         s.flagN(true);
-        s.flagC(temp > 0xff);
+        s.flagC(result > 0xff);
     }
 }
 /** All branches use displacement-2 eg. (-126 to +129) */
@@ -1139,6 +1151,7 @@ final class DI : Strategy {
         auto s = cpu.state;
 
         s.IFF1 = false;
+        s.IFF2 = false;
     }
 }
 final class EI : Strategy {
@@ -1153,6 +1166,7 @@ final class EI : Strategy {
         auto s = cpu.state;
 
         s.IFF1 = true;
+        s.IFF2 = true;
     }
 }
 final class EXX : Strategy {
@@ -1325,11 +1339,22 @@ final class IN_a_n : Strategy {
         auto s  = cpu.state;
         ubyte n = cpu.fetchByte();
 
-        todo();
+        s.A = cpu.readPort(n);
     }
 }
+final class OUT_n_a : Strategy {
+    /**
+     * out(n), a
+     *
+     * Flags: None
+     */
+    override void execute(Z80 cpu, Op op) const {
+        auto s  = cpu.state;
+        ubyte n = cpu.fetchByte();
 
-private:
+        cpu.writePort(n, s.A);
+    }
+}
 
 /**
  * 000 nz
@@ -1354,5 +1379,3 @@ bool jumpTaken(State s, uint cc) {
     }
     assert(false);
 }
-
-__gshared immutable Reg[8] REGS = [Reg.B, Reg.C, Reg.D, Reg.E, Reg.H, Reg.L, Reg.HL, Reg.A];

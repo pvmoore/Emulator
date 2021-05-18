@@ -1,37 +1,36 @@
-module emulator.component.Memory;
+module emulator.chips.z80.Z80Ports;
 
 import emulator.all;
 
-/**
- *  Little-endian Memory
- */
-final class Memory : BusComponent {
+final class Z80Ports : BusComponent {
 private:
-    ubyte[] data;
+    Z80Pins pins;
+    ubyte[256] data;
 public:
-    this(int numBytes) {
-        this.data.length = numBytes;
+    this(Z80Pins pins) {
+        this.pins = pins;
     }
 
     @Implements("BusComponent")
     override bool write(uint addr, ubyte value) {
-        data[addr] = value;
+        if(!pins.isIOReq()) return false;
+        auto port = addr & 0xff;
+        data[port] = value;
         return true;
     }
     @Implements("BusComponent")
     override bool writeWord(uint addr, ushort value) {
-        data[addr]   = value & 0xff;
-        data[addr+1] = value >>> 8;
-        return true;
+        return false;
     }
     @Implements("BusComponent")
     override bool read(uint addr, ref ubyte value) {
-        value = data[addr];
+        if(!pins.isIOReq()) return false;
+        auto port = addr & 0xff;
+        value = data[port];
         return true;
     }
     @Implements("BusComponent")
     override bool readWord(uint addr, ref ushort value) {
-        value = data[addr] | (data[addr+1]<<8);
-        return true;
+        return false;
     }
 }

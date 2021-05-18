@@ -26,6 +26,17 @@ enum {
     SBC_L  = 0x9d,
     SBC_HL = 0x9e,
 }
+enum {
+    ADC_HL_BC = [0xed, 0x4a],
+    ADC_HL_DE = [0xed, 0x5a],
+    ADC_HL_HL = [0xed, 0x6a],
+    ADC_HL_SP = [0xed, 0x7a],
+
+    SBC_HL_BC = [0xed, 0x42],
+    SBC_HL_DE = [0xed, 0x52],
+    SBC_HL_HL = [0xed, 0x62],
+    SBC_HL_SP = [0xed, 0x72],
+}
 
 void adc() {
     cpu.reset();
@@ -39,8 +50,8 @@ void adc() {
     ", [ADC_N, 0x0f]);
 
     assert(state.A == 0b0001_1111); // 15 + 15 + 1 = 31
-    assertFlagsSet(H);
-    assertFlagsClear(C, N, PV, S, Z);
+    assertFlagsSet();
+    assertFlagsClear(C, N, H, PV, S, Z);
 
     state.A = 0b0000_1111;  // 15
     state.flagC(false);
@@ -61,7 +72,7 @@ void adc() {
     ", [ADC_N, 0x80]);
 
     assert(state.A == 0x00); // 0x80 + 0x80 = 0x00
-    assertFlagsSet(C, PV, Z);
+    assertFlagsSet(C, Z, PV);
     assertFlagsClear(N, S);
 
     //------------------------------------------ adc a, a
@@ -73,8 +84,8 @@ void adc() {
     ", [ADC_A]);
 
     assert(state.A == 0b0001_1111); // 15 + 15 + 1 = 31
-    assertFlagsSet(H);
-    assertFlagsClear(C, N, PV, S, Z);
+    assertFlagsSet();
+    assertFlagsClear(C, N, H, PV, S, Z);
 
     state.A = 0b0000_1111;  // 15
     state.flagC(false);
@@ -196,8 +207,8 @@ void sbc() {
     ", [SBC_N, 0x0f]);
 
     assert(state.A == 0b0000_1111); // 31 - 15 - 1 = 0x0f
-    assertFlagsSet(H, N);
-    assertFlagsClear(C, PV, S, Z);
+    assertFlagsSet(N);
+    assertFlagsClear(C, H, PV, S, Z);
 
     state.A = 0b0001_1111;  // 31
     state.flagC(false);
@@ -214,17 +225,306 @@ void sbc() {
     state.A = 0x80;  // 128
     state.flagC(false);
     test("
-        sbc a, $80
-    ", [SBC_N, 0x80]);
+        sbc a, $01
+    ", [SBC_N, 0x01]);
 
-    assert(state.A == 0x00); // 0x80 - 0x80 = 0x00
+    assert(state.A == 0x7f);
+    assertFlagsSet(N, PV);
+    assertFlagsClear(Z, C, S);
+
+    state.A = 0xc2;
+    state.flagC(false);
+    test("
+        sbc a, $e9
+    ", [SBC_N, 0xe9]);
+
+    assert(state.A == 0xd9);
+    assertFlagsSet(N, S, C);
+    assertFlagsClear(Z, PV);
+
+    //------------------------------------------ sbc a, a
+    state.A = 0b0000_1111;  // 0f
+    state.flagC(true);
+    test("
+        sbc a, a
+    ", [SBC_A]);
+
+    assert(state.A == 0xff); // 0f - 0f - 01 = ff
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    state.A = 0b1000_0000;  // 80
+    state.flagC(false);
+    test("
+        sbc a, a
+    ", [SBC_A]);
+
+    assert(state.A == 0x00); // 0f - 0f - 00 = 00
     assertFlagsSet(N, Z);
-    assertFlagsClear(C, S, PV);
+    assertFlagsClear(C, S, H, PV);
+
+    //------------------------------------------ sbc a, b
+    state.A = 0x0f;
+    state.B = 0x0f;
+    state.flagC(true);
+    test("
+        sbc a, b
+    ", [SBC_B]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    state.A = 0x80;
+    state.B = 0x80;
+    state.flagC(false);
+    test("
+        sbc a, b
+    ", [SBC_B]);
+
+    assert(state.A == 0x00);
+    assertFlagsSet(N, Z);
+    assertFlagsClear(C, S, H, PV);
+
+    //------------------------------------------ sbc a, c
+    state.A = 0x0f;
+    state.C = 0x0f;
+    state.flagC(true);
+    test("
+        sbc a, c
+    ", [SBC_C]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, d
+    state.A = 0x0f;
+    state.D = 0x0f;
+    state.flagC(true);
+    test("
+        sbc a, d
+    ", [SBC_D]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, e
+    state.A = 0x0f;
+    state.E = 0x0f;
+    state.flagC(true);
+    test("
+        sbc a, e
+    ", [SBC_E]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, h
+    state.A = 0x0f;
+    state.H = 0x0f;
+    state.flagC(true);
+    test("
+        sbc a, h
+    ", [SBC_H]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, l
+    state.A = 0x0f;
+    state.L = 0x0f;
+    state.flagC(true);
+    test("
+        sbc a, l
+    ", [SBC_L]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, (hl)
+    state.A = 0x0f;
+    state.HL = 0x0000;
+    writeBytes(0x0000, [0x0f]);
+    state.flagC(true);
+    test("
+        sbc a, (hl)
+    ", [SBC_HL]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+}
+void adc_rr() {
+    cpu.reset();
+
+    state.flagC(true);
+    state.HL = 0x1234;
+    state.BC = 0x5678;
+    test("
+        adc hl, bc
+    ", ADC_HL_BC);
+
+    assert(state.HL == 0x68ad);
+
+    assertFlagsSet();
+    assertFlagsClear(N, S, Z, C, H, PV);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x1234;
+    state.BC = 0x5678;
+    test("
+        adc hl, bc
+    ", ADC_HL_BC);
+
+    assert(state.HL == 0x68ac);
+
+    assertFlagsSet();
+    assertFlagsClear(N, S, Z, C, H, PV);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x8000;
+    state.BC = 0x8000;
+    test("
+        adc hl, bc
+    ", ADC_HL_BC);
+
+    assert(state.HL == 0x0000);
+
+    assertFlagsSet(Z, C, PV);
+    assertFlagsClear(N, S, H);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x1234;
+    state.DE = 0x5678;
+    test("
+        adc hl, de
+    ", ADC_HL_DE);
+
+    assert(state.HL == 0x68ac);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x1234;
+    test("
+        adc hl, hl
+    ", ADC_HL_HL);
+
+    assert(state.HL == 0x2468);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x1234;
+    state.SP = 0x5678;
+    test("
+        adc hl, sp
+    ", ADC_HL_SP);
+
+    assert(state.HL == 0x68ac);
+}
+void sbc_rr() {
+    cpu.reset();
+
+    state.flagC(true);
+    state.HL = 0x5678;
+    state.BC = 0x1234;
+    test("
+        sbc hl, bc
+    ", SBC_HL_BC);
+
+    assert(state.HL == 0x4443);
+
+    assertFlagsSet(N);
+    assertFlagsClear(S, Z, C, H, PV);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x0000;
+    state.BC = 0x0000;
+    test("
+        sbc hl, bc
+    ", SBC_HL_BC);
+
+    assert(state.HL == 0x0000);
+
+    assertFlagsSet(N, Z);
+    assertFlagsClear(S, C, H, PV);
+
+    //--------------------------------------
+
+    state.flagC(true);
+    state.HL = 0x5678;
+    state.BC = 0x5678;
+    test("
+        sbc hl, bc
+    ", SBC_HL_BC);
+
+    assert(state.HL == 0xffff);
+
+    assertFlagsSet(N, S, C, H);
+    assertFlagsClear(Z, PV);
+
+    //--------------------------------------
+
+    state.flagC(true);
+    state.HL = 0x5678;
+    state.DE = 0x1234;
+    test("
+        sbc hl, de
+    ", SBC_HL_DE);
+
+    assert(state.HL == 0x4443);
+
+    assertFlagsSet(N);
+    assertFlagsClear(S, Z, C, H, PV);
+
+    //--------------------------------------
+
+    state.flagC(false);
+    state.HL = 0x5678;
+    test("
+        sbc hl, hl
+    ", SBC_HL_HL);
+
+    assert(state.HL == 0x0000);
+
+    assertFlagsSet(N, Z);
+    assertFlagsClear(S, C, H, PV);
+
+    //--------------------------------------
+
+    state.flagC(true);
+    state.HL = 0x5678;
+    state.SP = 0x1234;
+    test("
+        sbc hl, sp
+    ", SBC_HL_SP);
+
+    assert(state.HL == 0x4443);
+
+    assertFlagsSet(N);
+    assertFlagsClear(S, Z, C, H, PV);
 }
 
 setup();
 
 adc();
 sbc();
+adc_rr();
+sbc_rr();
 
 } // unittest
+

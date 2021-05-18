@@ -8,12 +8,17 @@ import std.format   : format;
 import common;
 
 import emulator.Bus;
+import emulator.Pins;
 import emulator.util;
+
+import emulator.Memory;
 
 import emulator.chips.z80.State;
 import emulator.chips.z80.Z80;
 import emulator.chips.z80.Z80Decoder;
 import emulator.chips.z80.Z80Encoder;
+import emulator.chips.z80.Z80Pins;
+import emulator.chips.z80.Z80Ports;
 
 import emulator.chips.z80.instr.instructions;
 import emulator.chips.z80.instr.instructions_cb;

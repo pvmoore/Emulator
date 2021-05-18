@@ -35,7 +35,7 @@ final class RLC_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.byte2) & 7;
         ubyte before;
         ubyte after;
 
@@ -53,12 +53,12 @@ final class RLC_r : Strategy {
                 break;
             default:  before = s.A; s.A = after = ((s.A<<1) | (before>>>7)).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
-        s.flagC((before>>>7)!=0);
+        s.flagC((before&0x80)!=0);
     }
 }
 final class RRC_r : Strategy {
@@ -79,7 +79,7 @@ final class RRC_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.byte2) & 7;
         ubyte before;
         ubyte after;
 
@@ -97,10 +97,10 @@ final class RRC_r : Strategy {
                 break;
             default:  before = s.A; s.A = after = ((s.A>>>1) | ((before<<7)&0x80)).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
         s.flagC((before&1)!=0);
     }
@@ -123,7 +123,7 @@ final class RL_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.byte2) & 7;
         ubyte before;
         ubyte after;
         ubyte c = s.flagC() ? 1 : 0;
@@ -142,12 +142,12 @@ final class RL_r : Strategy {
                 break;
             default:  before = s.A; s.A = after = ((s.A<<1) | c).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
-        s.flagC((before>>>7)!=0);
+        s.flagC((before&0x80)!=0);
     }
 }
 final class RR_r : Strategy {
@@ -168,7 +168,7 @@ final class RR_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.byte2) & 7;
         ubyte before;
         ubyte after;
         ubyte c = s.flagC() ? 0x80 : 0;
@@ -187,10 +187,10 @@ final class RR_r : Strategy {
                 break;
             default:  before = s.A; s.A = after = ((s.A>>>1) | c).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
         s.flagC((before&1)!=0);
     }
@@ -213,28 +213,29 @@ final class SLA_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = op.byte2 & 7;
         ubyte before;
         ubyte after;
 
         // 2 cycles
+
         switch(rrr) {
-            case 0: before = s.B; s.B = after = ((s.B<<1)).as!ubyte; break;
-            case 1: before = s.C; s.C = after = ((s.C<<1)).as!ubyte; break;
-            case 2: before = s.D; s.D = after = ((s.D<<1)).as!ubyte; break;
-            case 3: before = s.E; s.E = after = ((s.E<<1)).as!ubyte; break;
-            case 4: before = s.H; s.H = after = ((s.H<<1)).as!ubyte; break;
-            case 5: before = s.L; s.L = after = ((s.L<<1)).as!ubyte; break;
+            case 0: before = s.B; s.B = after = (s.B<<1).as!ubyte; break;
+            case 1: before = s.C; s.C = after = (s.C<<1).as!ubyte; break;
+            case 2: before = s.D; s.D = after = (s.D<<1).as!ubyte; break;
+            case 3: before = s.E; s.E = after = (s.E<<1).as!ubyte; break;
+            case 4: before = s.H; s.H = after = (s.H<<1).as!ubyte; break;
+            case 5: before = s.L; s.L = after = (s.L<<1).as!ubyte; break;
             case 6:
                 before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before<<1)).as!ubyte);
+                cpu.writeByte(s.HL, after = (before<<1).as!ubyte);
                 break;
-            default:  before = s.A; s.A = after = ((s.A<<1)).as!ubyte; break;
+            default:  before = s.A; s.A = after = (s.A<<1).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
         s.flagC((before&0x80)!=0);
     }
@@ -258,11 +259,12 @@ final class SRA_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = op.byte2 & 7;
         ubyte before;
         ubyte after;
 
         // 2 cycles
+
         switch(rrr) {
             case 0: before = s.B; s.B = after = ((s.B>>>1) | (before&0x80)).as!ubyte; break;
             case 1: before = s.C; s.C = after = ((s.C>>>1) | (before&0x80)).as!ubyte; break;
@@ -276,10 +278,10 @@ final class SRA_r : Strategy {
                 break;
             default:  before = s.A; s.A = after = ((s.A>>>1) | (before&0x80)).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
         s.flagC((before&1)!=0);
     }
@@ -302,28 +304,28 @@ final class SRL_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.byte2) & 7;
         ubyte before;
         ubyte after;
 
         // 2 cycles
         switch(rrr) {
-            case 0: before = s.B; s.B = after = ((s.B>>>1)).as!ubyte; break;
-            case 1: before = s.C; s.C = after = ((s.C>>>1)).as!ubyte; break;
-            case 2: before = s.D; s.D = after = ((s.D>>>1)).as!ubyte; break;
-            case 3: before = s.E; s.E = after = ((s.E>>>1)).as!ubyte; break;
-            case 4: before = s.H; s.H = after = ((s.H>>>1)).as!ubyte; break;
-            case 5: before = s.L; s.L = after = ((s.L>>>1)).as!ubyte; break;
+            case 0: before = s.B; s.B = after = (s.B>>>1).as!ubyte; break;
+            case 1: before = s.C; s.C = after = (s.C>>>1).as!ubyte; break;
+            case 2: before = s.D; s.D = after = (s.D>>>1).as!ubyte; break;
+            case 3: before = s.E; s.E = after = (s.E>>>1).as!ubyte; break;
+            case 4: before = s.H; s.H = after = (s.H>>>1).as!ubyte; break;
+            case 5: before = s.L; s.L = after = (s.L>>>1).as!ubyte; break;
             case 6:
                 before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before>>>1)).as!ubyte);
+                cpu.writeByte(s.HL, after = (before>>>1).as!ubyte);
                 break;
-            default:  before = s.A; s.A = after = ((s.A>>>1)).as!ubyte; break;
+            default:  before = s.A; s.A = after = (s.A>>>1).as!ubyte; break;
         }
-        s.flagS(after.isNeg());
-        s.flagZ(after==0);
+        s.updateS(after);
+        s.updateZ(after);
         s.flagH(false);
-        s.flagPV(after.isEven());
+        s.updateP(after);
         s.flagN(false);
         s.flagC((before&1)!=0);
     }
@@ -349,20 +351,24 @@ final class BIT_r : Strategy {
         auto rrr  = (op.byte2) & 7;
         auto bbb  = (op.byte2>>>3) & 7;
         auto mask = 1<<bbb;
-        bool isSet;
+        ubyte value;
 
         // 8 clocks
+
         switch(rrr) {
-            case 0: isSet = (s.B&mask)!=0; break;
-            case 1: isSet = (s.C&mask)!=0; break;
-            case 2: isSet = (s.D&mask)!=0; break;
-            case 3: isSet = (s.E&mask)!=0; break;
-            case 4: isSet = (s.H&mask)!=0; break;
-            case 5: isSet = (s.L&mask)!=0; break;
-            case 6: isSet = (cpu.readByte(s.HL)&mask)!=0; break;
-            default: isSet = (s.A&mask)!=0; break;
+            case 0: value = s.B; break;
+            case 1: value = s.C; break;
+            case 2: value = s.D; break;
+            case 3: value = s.E; break;
+            case 4: value = s.H; break;
+            case 5: value = s.L; break;
+            case 6:
+                value = cpu.readByte(s.HL);
+                break;
+            default: value = s.A; break;
         }
-        s.flagZ(!isSet);
+
+        s.flagZ((value&mask)==0);
         s.flagH(true);
         s.flagN(false);
     }
@@ -390,6 +396,7 @@ final class RES_r : Strategy {
         auto mask = ~(1<<bbb);
 
         // 4 clocks
+
         switch(rrr) {
             case 0: s.B = (s.B&mask).as!ubyte; break;
             case 1: s.C = (s.C&mask).as!ubyte; break;
@@ -397,7 +404,10 @@ final class RES_r : Strategy {
             case 3: s.E = (s.E&mask).as!ubyte; break;
             case 4: s.H = (s.H&mask).as!ubyte; break;
             case 5: s.L = (s.L&mask).as!ubyte; break;
-            case 6: cpu.writeByte(s.HL, (cpu.readByte(s.HL)&mask).as!ubyte ); break;
+            case 6:
+                ubyte value = (cpu.readByte(s.HL)&mask).as!ubyte;
+                cpu.writeByte(s.HL, value);
+                break;
             default: s.A = (s.A&mask).as!ubyte; break;
         }
     }
@@ -432,7 +442,10 @@ final class SET_r : Strategy {
             case 3: s.E = (s.E|or).as!ubyte; break;
             case 4: s.H = (s.H|or).as!ubyte; break;
             case 5: s.L = (s.L|or).as!ubyte; break;
-            case 6: cpu.writeByte(s.HL, (cpu.readByte(s.HL)|or).as!ubyte ); break;
+            case 6:
+                ubyte value = (cpu.readByte(s.HL)|or).as!ubyte;
+                cpu.writeByte(s.HL, value);
+                break;
             default: s.A = (s.A|or).as!ubyte; break;
         }
     }

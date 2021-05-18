@@ -57,7 +57,7 @@ Instruction[256-112] groupED = [ // Starts at 40, ends at bf
     Instruction(0x67, _rrd,       ["rrd"]),
     Instruction(0x68, _inrc,      [IN, L, _, LBR, C, RBR]),
     Instruction(0x69, _outcr,     [OUT, LBR, C, RBR, _, L]),
-    Instruction(0x6a, _adchhss,   [ADC, HL, HL]),
+    Instruction(0x6a, _adchhss,   [ADC, HL, _, HL]),
     Instruction(0x6b, _ldddnni,   [LD, HL, _, LBR, NN, RBR]),
     Instruction(0x6c), // nothing here ? neg
     Instruction(0x6d), // nothing here ? retn
@@ -66,7 +66,7 @@ Instruction[256-112] groupED = [ // Starts at 40, ends at bf
 // row 7
     Instruction(0x70),  // nothing here ? in f, (c)
     Instruction(0x71),  // nothing here ? out (c), f
-    Instruction(0x72, _sbchlss,    [SBC, HL, SP]),
+    Instruction(0x72, _sbchlss,    [SBC, HL, _, SP]),
     Instruction(0x73, _ldnndd,     [LD, LBR, NN, RBR, _, SP]),
     Instruction(0x74), // nothing here ? neg
     Instruction(0x75), // nothing here ? retn

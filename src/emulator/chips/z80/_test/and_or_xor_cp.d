@@ -42,8 +42,8 @@ void and() {
         ["and a, b",
         "and a, $ff",
         "and a, (hl)"],
-        [S],
-        [Z, PV]
+        [S, PV],
+        [Z]
     );
 
     test({
@@ -109,8 +109,8 @@ void or() {
         ["or a, b",
         "or a, $ff",
         "or a, (hl)"],
-        [S],
-        [Z, PV]
+        [S, PV],
+        [Z]
     );
 
     test({
@@ -149,7 +149,7 @@ void xor() {
     ", [0xaf, 0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xee, 0xff]);
 
     // Flags: H,N,C always cleared
-    assertFlagsSet();
+    //assertFlagsSet();
     assertFlagsClear(H, N, C);
 
     //--------------------------------
@@ -173,8 +173,8 @@ void xor() {
         ["xor a, b",
         "xor a, $ff",
         "xor a, (hl)"],
-        [S],
-        [Z, PV]
+        [S, PV],
+        [Z]
     );
 }
 void cp() {
@@ -249,7 +249,7 @@ void cp() {
         ["cp a, b",
         "cp a, $81",
         "cp a, (hl)"],
-        [S, PV, C],
+        [S, C, PV],
         [Z]
     );
 }

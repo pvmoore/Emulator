@@ -39,7 +39,9 @@ public:
         C   = 1 << 0,   // 0x01 Carry
         N   = 1 << 1,   // 0x02 Add/Subtract
         PV  = 1 << 2,   // 0x04 Parity/Overflow
+        X   = 1 << 3,
         H   = 1 << 4,   // 0x10 Half Carry
+        Y   = 1 << 5,
         Z   = 1 << 6,   // 0x40 Zero
         S   = 1 << 7    // 0x80 Sign
     }
@@ -61,15 +63,23 @@ public:
     ushort HL1;
 
     // maskable interrupt flipflops
-    bool IFF1 = true; // should be false at reset?
-    bool IFF2 = true; // should be false at reset?
+    bool IFF1 = false;
+    bool IFF2 = false;
+
+    // Interrupt mode
+    //  0 -
+    //  1 -
+    //  2 -
+    uint IM;
 
     void reset() {
-        AF = BC = DE = HL = IX = IY = SP = PC = 0;
+        //AF = BC = DE = HL = IX = IY = SP = 0;
+        //AF1 = BC1 = DE1 = HL1 = 0;
+        PC = 0;
         I = R = 0;
-        AF1 = BC1 = DE1 = HL1 = 0;
-        IFF1 = true;
-        IFF2 = true;
+        IFF1 = false;
+        IFF2 = false;
+        IM = 0;
     }
     State clone() {
         auto s = new State();
@@ -89,6 +99,7 @@ public:
         s.HL1 = this.HL1;
         s.IFF1 = this.IFF1;
         s.IFF2 = this.IFF2;
+        s.IM = this.IM;
         return s;
     }
     override bool opEquals(const Object other) const {
@@ -111,7 +122,8 @@ public:
             s.DE1 == this.DE1 &&
             s.HL1 == this.HL1 &&
             s.IFF1 == this.IFF1 &&
-            s.IFF2 == this.IFF2;
+            s.IFF2 == this.IFF2 &&
+            s.IM == this.IM;
     }
     override string toString() {
         string flags =
@@ -122,8 +134,8 @@ public:
             (flag(Flag.N) ? "N" : "-") ~
             (flag(Flag.C) ? "C" : "-");
 
-        return "[%04x] %s AF:%04x BC:%04x DE:%04x HL:%04x SP:%04x I:%02x R:%02x IFF:%b,%b"
-            .format(PC, flags, AF, BC, DE, HL, SP, I, R, IFF1, IFF2);
+        return "[%04x] %s AF:%04x BC:%04x DE:%04x HL:%04x SP:%04x I:%02x R:%02x IFF:%b,%b IM:%s"
+            .format(PC, flags, AF, BC, DE, HL, SP, I, R, IFF1, IFF2, IM);
     }
 
     ubyte getReg8(Reg r) {
@@ -231,21 +243,34 @@ public:
     void flagZ(bool f)  { flag(Flag.Z, f); }
     void flagS(bool f)  { flag(Flag.S, f); }
 
-    void updateH(ubyte left, ubyte right, ubyte result) {
+    void updateH(uint left, uint right, uint result) {
         auto h = (left ^ right ^ result) & 0x10;
         flagH(h!=0);
     }
+    void updateH16(uint left, uint right, uint result) {
+        auto h = (left ^ right ^ result) & 0x1000;
+        flagH(h!=0);
+    }
     void updateP(ubyte result) {
-        flagPV((result&1)==0);
+        import core.bitop : popcnt;
+        flagPV((popcnt(result) & 1)==0);
     }
-    void updateV(ubyte left, ubyte right, ubyte result) {
-        auto v = (left ^ right) & (left ^ result) & 0x80;
-        flagPV(v!=0);
+    // void updateV(uint left, uint right, uint result) {
+    //     auto v = (left ^ right) & (left ^ result) & 0x80;
+    //     flagPV(v!=0);
+    // }
+    void updateV(uint left, uint right, uint result) {
+        auto v = ((left ^ right ^ result) >>> 7) & 3;
+        flagPV(v == 1 || v == 2);
     }
-    void updateZ(ubyte result) {
+    void updateV16(uint left, uint right, uint result) {
+        auto v = ((left ^ right ^ result) >>> 15) & 3;
+        flagPV(v == 1 || v == 2);
+    }
+    void updateZ(uint result) {
         flagZ(result==0);
     }
-    void updateS(ubyte result) {
+    void updateS(uint result) {
         flagS((result&0x80)!=0);
     }
 }

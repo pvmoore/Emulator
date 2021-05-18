@@ -2,13 +2,13 @@ module emulator.chips._6502._tests;
 
 import std.stdio;
 import emulator.chips._6502.all;
-import emulator.component.Memory;
 
 unittest {
 
 __gshared _6502 cpu;
 __gshared Memory mem;
 __gshared Bus bus;
+__gshared Pins pins;
 
 void writeBytes(uint addr, ubyte[] bytes) {
     foreach(i; 0..cast(uint)bytes.length) {
@@ -16,6 +16,7 @@ void writeBytes(uint addr, ubyte[] bytes) {
     }
 }
 void setup() {
+    pins = new Pins6502();
     mem = new Memory(65536);
     bus = new Bus().add(mem);
     cpu = new _6502();

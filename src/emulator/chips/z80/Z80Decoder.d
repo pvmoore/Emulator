@@ -35,7 +35,7 @@ final class Z80Decoder : Decoder {
                 if(code.length>1) {
                     numBytes++;
                     auto b = code[1];
-                    instr = &groupED[b];
+                    instr = &groupED[b - 0x40];
                 }
                 break;
             }

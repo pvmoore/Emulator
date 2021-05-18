@@ -53,40 +53,23 @@ final class IN_r_C : Strategy {
      *              ED 70
      * in a, (c)    ED 78
      *
-     * Flags:
+     * Flags: S, Z, PV
      */
     override void execute(Z80 cpu, Op op) const {
         auto s   = cpu.state;
         auto rrr = (op.byte2>>>3) & 7;
+        auto reg = REGS[rrr];
 
         // 12 clocks
 
-        switch(rrr) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            default:
-                break;
-        }
+        ubyte value = cpu.readPort(s.C);
+        s.setReg8(reg, value);
 
-        todo();
-    }
-}
-final class OUT_n_a : Strategy {
-    /**
-     * out(n), a
-     *
-     * Flags: None
-     */
-    override void execute(Z80 cpu, Op op) const {
-        auto s  = cpu.state;
-        ubyte n = cpu.fetchByte();
-
-        todo();
+        s.updateS(value);
+        s.updateZ(value);
+        s.flagH(false);
+        s.flagN(false);
+        s.updateP(value);
     }
 }
 final class OUT_C_r : Strategy {
@@ -108,22 +91,12 @@ final class OUT_C_r : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
         auto rrr = (op.byte2>>>3) & 7;
+        auto reg = REGS[rrr];
 
         // 12 clocks
 
-        switch(rrr) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            default:
-                break;
-        }
-
-        todo();
+        ubyte value = s.getReg8(reg);
+        cpu.writePort(state.C, value);
     }
 }
 final class ADC_HL_ss : Strategy {
@@ -141,23 +114,28 @@ final class ADC_HL_ss : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s        = cpu.state;
         auto ss       = (op.byte2>>>4) & 3;
-        ushort before = s.HL;
-        uint after;
+        ushort left   = s.HL;
         ushort c      = s.flagC() ? 1 : 0;
+        ushort right;
+
         // 15 clocks
 
         switch(ss) {
-            case 0: s.HL = (after = s.HL + s.BC - c).as!ushort; break;
-            case 1: s.HL = (after = s.HL + s.DE - c).as!ushort; break;
-            case 2: s.HL = (after = s.HL + s.HL - c).as!ushort; break;
-            default: s.HL = (after = s.HL + s.SP - c).as!ushort; break;
+            case 0: right = s.BC; break;
+            case 1: right = s.DE; break;
+            case 2: right = s.HL; break;
+            default: right = s.SP; break;
         }
-        s.flagS((s.HL & 0x8000)!=0);
-        s.flagZ(s.HL==0);
-        s.flagH(false); // set if carr from bit 11 - TODO
-        s.flagPV(after > 0xffff);       // FIXME
+
+        uint after = left + right + c;
+        state.HL = after.as!ushort;
+
+        s.flagS(state.HL >= 0x8000);
+        s.flagZ(state.HL == 0);
+        s.updateH16(left, right+c, after);
+        s.updateV16(left, right+c, after);
         s.flagN(false);
-        s.flagC(false);  // set if carry - FIXME
+        s.flagC(after > 0xffff);
     }
 }
 final class SBC_HL_ss : Strategy {
@@ -175,23 +153,28 @@ final class SBC_HL_ss : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s        = cpu.state;
         auto ss       = (op.byte2>>>4) & 3;
-        ushort before = s.HL;
-        uint after;
+        ushort left   = s.HL;
         ushort c      = s.flagC() ? 1 : 0;
+        ushort right;
+
         // 15 clocks
 
         switch(ss) {
-            case 0: s.HL = (after = s.HL - s.BC - c).as!ushort; break;
-            case 1: s.HL = (after = s.HL - s.DE - c).as!ushort; break;
-            case 2: s.HL = (after = s.HL - s.HL - c).as!ushort; break;
-            default: s.HL = (after = s.HL - s.SP - c).as!ushort; break;
+            case 0: right = s.BC; break;
+            case 1: right = s.DE; break;
+            case 2: right = s.HL; break;
+            default: right = s.SP; break;
         }
-        s.flagS((s.HL & 0x8000)!=0);
-        s.flagZ(s.HL==0);
-        s.flagH(false); // set if borrow from bit 12 - TODO
-        s.flagPV(after > 0xffff);
+
+        uint after = left - right - c;
+        s.HL = after.as!ushort;
+
+        s.flagS(s.HL >= 0x8000);
+        s.flagZ(s.HL == 0);
+        s.updateH16(left, right+c, after);
+        s.updateV16(left, right+c, after);
         s.flagN(true);
-        s.flagC(false);  // set if borrow - FIXME
+        s.flagC(after > 0xffff);
     }
 }
 final class LD_nn_dd : Strategy {
@@ -238,12 +221,12 @@ final class NEG : Strategy {
         auto before = s.A;
         s.A = (0u-s.A).as!ubyte;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
-        s.flagH(false); // set if borrow from bit 4 - FIXME
+        s.updateS(s.A);
+        s.updateZ(s.A);
+        s.updateH(before, 0, s.A);
         s.flagPV(before==0x80);
         s.flagN(true);
-        s.flagC(before!=00);
+        s.flagC(before!=0x00);
     }
 }
 final class IM : Strategy {
@@ -274,7 +257,7 @@ final class IM : Strategy {
         // then becomes the least-significant eight bits of the indirect pointer, while the I Register in
         // the CPU provides the most-significant eight bits. This address points to an address in a
         // vector table that is the starting address for the interrupt service routine.
-        todo();
+        s.IM = mode;
     }
 }
 final class RETI : Strategy {
@@ -289,6 +272,7 @@ final class RETI : Strategy {
 
         // 14 clocks
 
+        s.IFF1 = s.IFF2;
         s.PC = cpu.popWord();
     }
 }
@@ -304,6 +288,7 @@ final class RETN : Strategy {
 
         // 14 clocks
 
+        s.IFF1 = s.IFF2;
         s.PC = cpu.popWord();
     }
 }
@@ -338,10 +323,10 @@ final class LD_a_i : Strategy {
 
         s.A = s.I;
 
-        s.flagS(s.I.isNeg());
-        s.flagZ(s.I==0);
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(false);
-        s.flagPV(false);        // contains IFF2 - FIXME
+        s.flagPV(s.IFF2);
         s.flagN(false);
     }
 }
@@ -376,10 +361,10 @@ final class LD_a_R : Strategy {
 
         s.A = s.R;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(false);
-        s.flagPV(false);        // contents of IFF2 - FIXME
+        s.flagPV(s.IFF2);
         s.flagN(false);
     }
 }
@@ -397,16 +382,21 @@ final class RLD : Strategy {
 
         // 18 clocks
 
-        ubyte value2 = ((s.A&0xf) | (value<<4)).as!ubyte;
+        ubyte H = value & 0xf0;
+        ubyte L = value & 0x0f;
+        ubyte aH = s.A & 0xf0;
+        ubyte aL = s.A & 0x0f;
 
-        s.A = ((s.A & 0xf0) | (value<<4)).as!ubyte;
+        ubyte value2 = ((L<<4) | aL).as!ubyte;
+
+        s.A = (aH | (H>>>4)).as!ubyte;
 
         cpu.writeByte(s.HL, value2);
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(false);
-        s.flagPV(s.A.isEven());
+        s.updateP(s.A);
         s.flagN(false);
     }
 }
@@ -425,13 +415,21 @@ final class RRD : Strategy {
 
         // 18 clocks
 
-        s.A = ((s.A & 0xf0) | (value & 0xf)).as!ubyte;
-        cpu.writeByte(s.HL, ((value & 0xf) | (before<<4)).as!ubyte);
+        ubyte H = value & 0xf0;
+        ubyte L = value & 0x0f;
+        ubyte aH = s.A & 0xf0;
+        ubyte aL = s.A & 0x0f;
 
-        s.flagS(s.A.isNeg());
-        s.flagZ(s.A==0);
+        ubyte value2 = ((aL<<4) | (H>>4)).as!ubyte;
+
+        s.A = (aH | L).as!ubyte;
+
+        cpu.writeByte(s.HL, value2);
+
+        s.updateS(s.A);
+        s.updateZ(s.A);
         s.flagH(false);
-        s.flagPV(s.A.isEven());
+        s.updateP(s.A);
         s.flagN(false);
     }
 }
@@ -449,7 +447,7 @@ final class LD_dd_nn_indirect : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte1 >>> 4) & 3;
+        auto bits = (op.byte2 >>> 4) & 3;
         auto addr = cpu.fetchWord();
         auto value = cpu.readWord(addr);
 
@@ -558,9 +556,9 @@ final class CPDR : Strategy {
             // 16 clocks
         }
 
-        s.flagS(result.isNeg());
+        s.updateS(result.as!ubyte);
         s.flagZ(s.A==b);
-        s.flagH(false);     // set if borrow from bit 4 - FIXME
+        s.updateH(s.A, b, result);
         s.flagPV(s.BC!=0);
         s.flagN(true);
     }
@@ -586,7 +584,7 @@ final class LDD : Strategy {
 
         s.flagH(false);
         s.flagPV(s.BC!=0);
-        s.flagN(true);
+        s.flagN(false);
     }
 }
 final class LDDR : Strategy {
@@ -630,7 +628,9 @@ final class INI : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
 
-        todo();
+        ubyte value = cpu.readPort(s.C);
+
+        cpu.writeByte(s.HL, value);
 
         s.HL = (s.HL+1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -648,8 +648,9 @@ final class OUTI : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
+        ubyte value = cpu.readByte(s.HL);
 
-        todo();
+        cpu.writePort(s.C, value);
 
         s.HL = (s.HL+1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -670,7 +671,9 @@ final class IND : Strategy {
 
         // 16 clocks
 
-        todo();
+        ubyte value = cpu.readPort(s.C);
+
+        cpu.writeByte(s.HL, value);
 
         s.HL = (s.HL-1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -689,7 +692,8 @@ final class INDR : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
 
-        todo();
+        ubyte value = cpu.readPort(s.C);
+        cpu.writeByte(s.HL, value);
 
         s.HL = (s.HL-1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -714,10 +718,9 @@ final class OUTD : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
+        ubyte value = cpu.readByte(s.HL);
 
-        // 16 clocks
-
-        todo();
+        cpu.writePort(s.C, value);
 
         s.HL = (s.HL-1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -738,7 +741,8 @@ final class OTDR : Strategy {
 
         // 16 clocks
 
-        todo();
+        ubyte value = cpu.readByte(s.HL);
+        cpu.writePort(s.C, value);
 
         s.HL = (s.HL-1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -779,7 +783,9 @@ final class LDIR : Strategy {
             // 21 clocks
         }
 
+        s.flagPV(s.BC!=0);
         s.flagH(false);
+        s.flagN(false);
     }
 }
 final class CPIR : Strategy {
@@ -809,7 +815,7 @@ final class CPIR : Strategy {
 
         s.flagS((result & 0x80000000)!=0);
         s.flagZ(s.A==b);
-        s.flagH(false); // set if borrow from bit 4 - FIXME
+        s.updateH(s.A, b, result);
         s.flagPV(s.BC!=0);
         s.flagN(true);
     }
@@ -824,7 +830,8 @@ final class INIR : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
 
-        todo();
+        ubyte value = cpu.readPort(s.C);
+        cpu.writeByte(s.HL, value);
 
         s.HL = (s.HL+1).as!ushort;
         s.B  = (s.B-1).as!ubyte;
@@ -851,7 +858,8 @@ final class OTIR : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
 
-        todo();
+        ubyte value = cpu.readByte(s.HL);
+        cpu.writePort(s.C, value);
 
         s.HL = (s.HL+1).as!ushort;
         s.B  = (s.B-1).as!ubyte;

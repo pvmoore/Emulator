@@ -7,9 +7,11 @@ private:
     Bus bus;
 public:
     State state;
+    Z80Pins pins;
 
     this() {
         this.state = new State();
+        this.pins = new Z80Pins();
     }
     auto addBus(Bus bus) {
         this.bus = bus;
@@ -97,6 +99,12 @@ public:
     ubyte readByte(ushort addr) {
         return bus.read(addr);
     }
+    ubyte readPort(ubyte port) {
+        pins.setIOReq(true);
+        ubyte value = readByte(port);
+        pins.setMReq(true);
+        return value;
+    }
     /**
      *  Read a word from the Bus
      */
@@ -109,6 +117,11 @@ public:
      */
     void writeByte(ushort addr, ubyte value) {
         bus.write(addr, value);
+    }
+    void writePort(ubyte port, ubyte value) {
+        pins.setIOReq(true);
+        writeByte(port, value);
+        pins.setMReq(true);
     }
     /**
      *  Write a word to the Bus

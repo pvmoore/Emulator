@@ -27,6 +27,7 @@ final class Z80Encoder : Encoder {
         this.REGS = new Set!string;
         this.REGS.add([
             "a","b","c","d","e","h","l",
+            "r", "i",
             "af","bc","de","hl","sp",
             "af'"
         ]);
@@ -60,7 +61,7 @@ final class Z80Encoder : Encoder {
             }
             enc.fixupTokens = match.fixupTokens;
 
-            //writefln("  %s fixup num:%s", enc.temp[0..i].map!(it=>"%02x".format(it).array), enc.numFixupBytes);
+            //writefln("  %s fixup num:%s", enc.bytes.map!(it=>"%02x".format(it).array), enc.numFixupBytes);
         } else {
             writefln("no match found: %s", asmTokens);
         }
