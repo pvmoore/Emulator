@@ -57,7 +57,7 @@ final class IN_r_C : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s   = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.code>>>3) & 7;
         auto reg = REGS[rrr];
 
         // 12 clocks
@@ -90,7 +90,7 @@ final class OUT_C_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2>>>3) & 7;
+        auto rrr = (op.code>>>3) & 7;
         auto reg = REGS[rrr];
 
         // 12 clocks
@@ -113,7 +113,7 @@ final class ADC_HL_ss : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s        = cpu.state;
-        auto ss       = (op.byte2>>>4) & 3;
+        auto ss       = (op.code>>>4) & 3;
         ushort left   = s.HL;
         ushort c      = s.flagC() ? 1 : 0;
         ushort right;
@@ -152,7 +152,7 @@ final class SBC_HL_ss : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s        = cpu.state;
-        auto ss       = (op.byte2>>>4) & 3;
+        auto ss       = (op.code>>>4) & 3;
         ushort left   = s.HL;
         ushort c      = s.flagC() ? 1 : 0;
         ushort right;
@@ -193,7 +193,7 @@ final class LD_nn_dd : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s    = cpu.state;
-        auto dd   = (op.byte2>>>4) & 3;
+        auto dd   = (op.code>>>4) & 3;
         auto addr = cpu.fetchWord();
         ushort value;
         // 20 clocks
@@ -238,8 +238,8 @@ final class IM : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto mode = op.byte2==0x46 ? 0
-                  : op.byte2==0x56 ? 1 : 2;
+        auto mode = op.code==0x46 ? 0
+                  : op.code==0x56 ? 1 : 2;
         // 8 clocks
 
         // IM 0
@@ -447,7 +447,7 @@ final class LD_dd_nn_indirect : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte2 >>> 4) & 3;
+        auto bits = (op.code >>> 4) & 3;
         auto addr = cpu.fetchWord();
         auto value = cpu.readWord(addr);
 

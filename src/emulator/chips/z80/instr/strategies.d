@@ -145,7 +145,7 @@ final class LD_r_n : Strategy {
      *   011    ld e,       1e
      *   100    ld h        26
      *   101    ld l,       2e
-     *   110    lh (hl),    36
+     *   110    lh (hl),    36 ; ld (ix+d), n ; ld (iy+d), n
      *   111    ld a        3e
      *
      * Flags: None
@@ -153,7 +153,7 @@ final class LD_r_n : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
         ubyte value = cpu.fetchByte();
-        auto bits = (op.byte1 >>> 3) & 7;
+        auto bits = (op.code >>> 3) & 7;
         switch(bits) {
             case 0: s.B = value; break;
             case 1: s.C = value; break;
@@ -162,7 +162,7 @@ final class LD_r_n : Strategy {
             case 4: s.H = value; break;
             case 5: s.L = value; break;
             case 6:
-                cpu.writeByte(s.HL, value);
+                cpu.writeByte(getHLIXdIYd(cpu, op), value);
                 break;
             case 7: s.A = value; break;
             default: break;
@@ -181,7 +181,7 @@ final class LD_r_r : Strategy {
      * ld b,e       43      01 000 011
      * ld b,h       44      01 000 100
      * ld b,l       45      01 000 101
-     * ld b, (hl)   46      01 000 110
+     * ld b, (hl)   46      01 000 110  ld b, (ix+d) ; ld b, (iy+d)
      * ld b,a       47      01 000 111
      *
      * ld c,b       48      01 001 000
@@ -190,7 +190,7 @@ final class LD_r_r : Strategy {
      * ld c,e       4b      01 001 011
      * ld c,h       4c      01 001 100
      * ld c,l       4d      01 001 101
-     * ld c,(hl)    4e      01 001 110
+     * ld c,(hl)    4e      01 001 110  ld c, (ix+d) ; ld c, (iy+d)
      * ld c,a       4f      01 001 111
      *
      * ld d,b       50      01 010 000
@@ -199,7 +199,7 @@ final class LD_r_r : Strategy {
      * ld d,e       53      01 010 011
      * ld d,h       54      01 010 100
      * ld d,l       55      01 010 101
-     * ld d,(hl)    56      01 010 110
+     * ld d,(hl)    56      01 010 110  ld d, (ix+d) ; ld d, (iy+d)
      * ld d,a       57      01 010 111
      *
      * ld e,b       58      01 011 000
@@ -208,7 +208,7 @@ final class LD_r_r : Strategy {
      * ld e,e       5b      01 011 011
      * ld e,h       5c      01 011 100
      * ld e,l       5d      01 011 101
-     * ld e,(hl)    5e      01 011 110
+     * ld e,(hl)    5e      01 011 110  ld e, (ix+d) ; ld e, (iy+d)
      * ld e,a       5f      01 011 111
      *
      * ld h,b       60      01 100 000
@@ -217,7 +217,7 @@ final class LD_r_r : Strategy {
      * ld h,e       63      01 100 011
      * ld h,h       64      01 100 100
      * ld h,l       65      01 100 101
-     * ld h,(hl)    66      01 100 110
+     * ld h,(hl)    66      01 100 110  ld h, (ix+d) ; ld h, (iy+d)
      * ld h,a       67      01 100 111
      *
      * ld l,b       68      01 101 000
@@ -226,17 +226,17 @@ final class LD_r_r : Strategy {
      * ld l,e       6b      01 101 011
      * ld l,h       6c      01 101 100
      * ld l,l       6d      01 101 101
-     * ld l,(hl)    6e      01 101 110
+     * ld l,(hl)    6e      01 101 110  ld l, (ix+d) ; ld l, (iy+d)
      * ld l,a       6f      01 101 111
      *
-     * ld (hl),b    70      01 110 000
-     * ld (hl),c    71      01 110 001
-     * ld (hl),d    72      01 110 010
-     * ld (hl),e    73      01 110 011
-     * ld (hl),h    74      01 110 100
-     * ld (hl),l    75      01 110 101
+     * ld (hl),b    70      01 110 000  ld (ix+d), b ; ld (iy+d), b
+     * ld (hl),c    71      01 110 001  ld (ix+d), c ; ld (iy+d), c
+     * ld (hl),d    72      01 110 010  ld (ix+d), d ; ld (iy+d), d
+     * ld (hl),e    73      01 110 011  ld (ix+d), e ; ld (iy+d), e
+     * ld (hl),h    74      01 110 100  ld (ix+d), h ; ld (iy+d), h
+     * ld (hl),l    75      01 110 101  ld (ix+d), l ; ld (iy+d), l
      * halt         76
-     * ld (hl),a    77      01 110 111
+     * ld (hl),a    77      01 110 111  ld (ix+d), a ; ld (iy+d), a
      *
      * ld a,b       78      01 111 000
      * ld a,c       79      01 111 001
@@ -244,22 +244,24 @@ final class LD_r_r : Strategy {
      * ld a,e       7b      01 111 011
      * ld a,h       7c      01 111 100
      * ld a,l       7d      01 111 101
-     * ld a,(hl)    7e      01 111 110
+     * ld a,(hl)    7e      01 111 110  ld a, (ix+d) ; ld a, (iy+d)
      * ld a,a       7f      01 111 111
      *
      * Flags: None
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto src  = op.byte1 & 7;
-        auto dest = (op.byte1 >>> 3) & 7;
+        auto src  = op.code & 7;
+        auto dest = (op.code >>> 3) & 7;
         auto srcReg = REGS[src];
         auto destReg = REGS[dest];
 
         if(destReg==Reg.HL) {
-            cpu.writeWord(s.HL, s.getReg8(srcReg));
+            auto addr = getHLIXdIYd(cpu, op);
+            cpu.writeWord(addr, s.getReg8(srcReg));
         } else if(srcReg==Reg.HL) {
-            s.setReg8(destReg, cpu.readByte(s.HL));
+            auto addr = getHLIXdIYd(cpu, op);
+            s.setReg8(destReg, cpu.readByte(addr));
         } else {
             s.setReg8(destReg, s.getReg8(srcReg));
         }
@@ -280,9 +282,10 @@ final class ALG_a_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s      = cpu.state;
-        auto rrr    = REGS[op.byte1 & 7];
-        auto ccc    = (op.byte1>>>3) & 7;
-        auto src    = rrr==Reg.HL ? cpu.readByte(s.HL) : s.getReg8(rrr);
+        auto rrr    = REGS[op.code & 7];
+        auto ccc    = (op.code>>>3) & 7;
+        auto src    = rrr==Reg.HL ? cpu.readByte(getHLIXdIYd(cpu, op))
+                                  : s.getReg8(rrr);
         auto before = s.A;
         auto c      = s.flagC() ? 1 : 0;
         uint after;
@@ -381,19 +384,20 @@ final class LD_dd_nn : Strategy {
      * 00dd0001
      * 00000001 ld bc, nn
      * 00010001 ld de, nn
-     * 00100001 ld hl, nn
+     * 00100001 ld hl, nn ; ld ix, nn ; ld iy, nn
      * 00110001 ld sp, nn
      *
      * Flags: None
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte1 >>> 4) & 3;
+        auto bits = (op.code >>> 4) & 3;
         auto value = cpu.fetchWord();
+
         switch(bits) {
             case 0: s.BC = value; break;
             case 1: s.DE = value; break;
-            case 2: s.HL = value; break;
+            case 2: s.setReg16(op.indexReg, value); break;
             case 3: s.SP = value; break;
             default: break;
         }
@@ -433,7 +437,7 @@ final class LD_SP_HL : Strategy {
         auto s = cpu.state;
 
         // 6 clocks
-        s.SP = s.HL;
+        s.SP = s.getReg16(op.indexReg);
     }
 }
 final class LD_nn_REG : Strategy {
@@ -450,7 +454,10 @@ final class LD_nn_REG : Strategy {
         if(is8Bit(reg)) {
             cpu.writeByte(addr, s.getReg8(reg));
         } else {
-            cpu.writeWord(addr, s.getReg16(reg));
+            // HL, IX, IY
+            auto r = reg==Reg.HL ? op.indexReg : reg;
+
+            cpu.writeWord(addr, s.getReg16(r));
         }
     }
 }
@@ -475,7 +482,10 @@ final class LD_REG_nn : Strategy {
         if(is8Bit(reg)) {
             s.setReg8(reg, cpu.readByte(addr));
         } else {
-            s.setReg16(reg, cpu.readWord(addr));
+            // HL, IX, IY
+            auto r = reg==Reg.HL ? op.indexReg : reg;
+
+            s.setReg16(r, cpu.readWord(addr));
         }
     }
 }
@@ -488,14 +498,14 @@ final class INCr : Strategy {
      * 00011100 inc e    1c
      * 00100100 inc h    24
      * 00101100 inc l    2c
-     * 00110100 inc (hl) 34
+     * 00110100 inc (hl) 34 ; inc (ix+d); inc (iy+d)
      * 00111100 inc a    3c
      *
      * Flags: S,Z,H,PV,N
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte1 >>> 3) & 7;
+        auto bits = (op.code >>> 3) & 7;
         ubyte before;
         switch(bits) {
             case 0: before = s.B; s.B((s.B+1).as!ubyte); break;
@@ -505,9 +515,9 @@ final class INCr : Strategy {
             case 4: before = s.H; s.H((s.H+1).as!ubyte); break;
             case 5: before = s.L; s.L((s.L+1).as!ubyte); break;
             case 6:
-                auto value = cpu.readByte(s.HL);
-                before = value;
-                cpu.writeByte(s.HL, (value+1).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                auto value = before = cpu.readByte(addr);
+                cpu.writeByte(addr, (value+1).as!ubyte);
                 break;
             case 7: before = s.A; s.A((s.A+1).as!ubyte); break;
             default: break;
@@ -528,14 +538,14 @@ final class DECr : Strategy {
      * 00011101 dec e    1d
      * 00100101 dec h    25
      * 00101101 dec l    2d
-     * 00110101 dec (hl) 35
+     * 00110101 dec (hl) 35 ; dec (ix+d) ; dec (iy+d)
      * 00111101 dec a    3d
      *
      * Flags: S,Z,H,PV,N
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte1 >>> 3) & 7;
+        auto bits = (op.code >>> 3) & 7;
         ubyte before;
         switch(bits) {
             case 0: before = s.B; s.B((s.B-1).as!ubyte); break;
@@ -545,9 +555,9 @@ final class DECr : Strategy {
             case 4: before = s.H; s.H((s.H-1).as!ubyte); break;
             case 5: before = s.L; s.L((s.L-1).as!ubyte); break;
             case 6:
-                auto value = cpu.readByte(s.HL);
-                before = value;
-                cpu.writeByte(s.HL, (value-1).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                auto value = before = cpu.readByte(addr);
+                cpu.writeByte(addr, (value-1).as!ubyte);
                 break;
             case 7: before = s.A; s.A((s.A-1).as!ubyte); break;
             default: break;
@@ -564,18 +574,21 @@ final class INCss : Strategy {
      *  00ss0011
      *    00     inc bc     03
      *    01     inc de     13
-     *    10     inc hl     23
+     *    10     inc hl     23 ; inc ix; inc iy
      *    11     inc sp     33
      *
      * Flags: None
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte1 >>> 4) & 3;
+        auto bits = (op.code >>> 4) & 3;
         switch(bits) {
             case 0: s.BC++; break;
             case 1: s.DE++; break;
-            case 2: s.HL++; break;
+            case 2:
+                ushort old = s.getReg16(op.indexReg);
+                s.setReg16(op.indexReg, (old+1).as!ushort);
+                break;
             case 3: s.SP++; break;
             default: break;
         }
@@ -586,18 +599,21 @@ final class DECss : Strategy {
      *  00ss1011
      *    00     dec bc     0b
      *    01     dec de     1b
-     *    10     dec hl     2b
+     *    10     dec hl     2b  ; dec ix; dec iy
      *    11     dec sp     3b
      *
      * Flags: None
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto bits = (op.byte1 >>> 4) & 3;
+        auto bits = (op.code >>> 4) & 3;
         switch(bits) {
             case 0: s.BC--; break;
             case 1: s.DE--; break;
-            case 2: s.HL--; break;
+            case 2:
+                ushort old = s.getReg16(op.indexReg);
+                s.setReg16(op.indexReg, (old-1).as!ushort);
+                break;
             case 3: s.SP--; break;
             default: break;
         }
@@ -682,25 +698,33 @@ final class EXaf : Strategy {
 final class ADD_HLss : Strategy {
     /**
      *  00ss1001
-     *    00    add hl, bc      09
-     *    01    add hl, de      19
-     *    10    add hl, hl      29
-     *    11    add hl, sp      39
+     *    00    add hl, bc      09  ; add ix, bc ; add iy, bc
+     *    01    add hl, de      19  ; add ix, de ; add iy, de
+     *    10    add hl, hl      29  ; add ix, ix ; add iy, iy
+     *    11    add hl, sp      39  ; add ix, sp ; add iy, sp
      *
      * Flags: N,H
      */
     override void execute(Z80 cpu, Op op) const {
-        auto s = cpu.state;
-        auto bits = (op.byte1 >>> 4) &  3;
-        ushort before = s.HL;
+        auto s    = cpu.state;
+        auto bits = (op.code >>> 4) &  3;
+        auto reg  = op.indexReg;
+        ushort left = s.getReg16(reg);
+        ushort right;
+
         switch(bits) {
-            case 0: s.HL = (s.HL + s.BC).as!ushort; break;
-            case 1: s.HL = (s.HL + s.DE).as!ushort; break;
-            case 2: s.HL = (s.HL + s.HL).as!ushort; break;
-            case 3: s.HL = (s.HL + s.SP).as!ushort; break;
+            case 0: right = s.BC; break;
+            case 1: right = s.DE; break;
+            case 2: right = left; break;
+            case 3: right = s.SP; break;
             default: break;
         }
-        s.flagH((before<=0xfff && s.HL > 0xfff));
+
+        uint result = left + right;
+
+        s.setReg16(reg, result.as!ushort);
+
+        s.updateH16(left, right, result);
         s.flagN(false);
     }
 }
@@ -950,7 +974,7 @@ final class JPccnn : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s     = cpu.state;
-        auto cc    = (op.byte1>>>3) & 7;
+        auto cc    = (op.code>>>3) & 7;
         ushort nn  = cpu.fetchWord();
         bool taken = jumpTaken(s, cc);
 
@@ -993,7 +1017,7 @@ final class CALLccnn : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s     = cpu.state;
-        auto cc    = (op.byte1>>>3) & 7;
+        auto cc    = (op.code>>>3) & 7;
         ushort nn  = cpu.fetchWord();
         bool taken = jumpTaken(s, cc);
 
@@ -1026,12 +1050,12 @@ final class JP_HL : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto addr = op.byte1 == 0xdd ? cpu.readWord(s.IX) :
-                    op.byte1 == 0xfd ? cpu.readWord(s.IY) :
-                                       cpu.readWord(s.HL);
+        auto addr = cpu.readWord(s.getReg16(op.indexReg));
 
         // 4 clocks (hl)
         // 8 clocks (ix) or (iy)
+
+        // CHECK - does this use displacement?
 
         s.PC = addr;
     }
@@ -1069,7 +1093,7 @@ final class RETcc : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s      = cpu.state;
-        auto cc     = (op.byte1>>>3) & 7;
+        auto cc     = (op.code>>>3) & 7;
         bool taken  = jumpTaken(s, cc);
 
         if(taken) {
@@ -1222,7 +1246,7 @@ final class EX_SP_HL : Strategy {
 
         // 19 clocks
 
-        ushort temp = s.HL;
+        ushort temp = s.getReg16(op.indexReg);
         s.HL = cpu.readWord(s.SP);
         cpu.writeWord(s.SP, temp);
     }
@@ -1268,13 +1292,13 @@ final class PUSHqq : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s  = cpu.state;
-        auto qq = (op.byte1>>>4) & 3;
+        auto qq = (op.code>>>4) & 3;
         ushort value;
 
         switch(qq) {
             case 0: value = s.BC; break;
             case 1: value = s.DE; break;
-            case 2: value = s.HL; break;
+            case 2: value = s.getReg16(op.indexReg); break;
             default: value = s.AF; break;
         }
         cpu.pushWord(value);
@@ -1293,13 +1317,15 @@ final class POPqq : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s  = cpu.state;
-        auto qq = (op.byte1>>>4) & 3;
+        auto qq = (op.code>>>4) & 3;
         ushort value = cpu.popWord();
 
         switch(qq) {
             case 0: s.BC = value; break;
             case 1: s.DE = value; break;
-            case 2: s.HL = value; break;
+            case 2:
+                s.setReg16(op.indexReg, value);
+                break;
             default: s.AF = value; break;
         }
     }
@@ -1321,7 +1347,7 @@ final class RSTp : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto p = (op.byte1>>>3) & 7;
+        auto p = (op.code>>>3) & 7;
 
         // 11 cycles
 

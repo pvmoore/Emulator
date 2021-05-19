@@ -3,6 +3,9 @@ module emulator.chips.z80.Z80Decoder;
 import emulator.chips.z80.all;
 import emulator.assembler.all;
 
+/**
+ * Decode Z80 assembly bytes
+ */
 final class Z80Decoder : Decoder {
     this() {
 
@@ -35,7 +38,7 @@ final class Z80Decoder : Decoder {
                 if(code.length>1) {
                     numBytes++;
                     auto b = code[1];
-                    instr = &groupED[b - 0x40];
+                    instr = &groupED[b];
                 }
                 break;
             }
@@ -51,14 +54,20 @@ final class Z80Decoder : Decoder {
                 instr = &primary[a];
                 break;
         }
-        dec.match = instr.strategy !is null;
+        dec.match = instr.isValid();
 
         if(dec.match) {
             auto numLiteralBytes = instr.numExtraBytes();
+
+            dec.numLiteralBytes = numLiteralBytes;
             dec.numBytes = numBytes + numLiteralBytes;
-            dec.tokens = instr.tokens.dup;
-            dec.numLiteralBytes = instr.numExtraBytes();
-            dec.literalTokenIndex = instr.indexOfLiteral();
+
+            if(instr.alt.contains("ix") || instr.alt.contains("iy")) {
+                // Prefer the alt tokens if this is a DD or FD instruction
+                dec.tokens = instr.alt.dup;
+            } else {
+                dec.tokens = instr.tokens.dup;
+            }
         }
     }
 private:

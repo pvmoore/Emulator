@@ -28,17 +28,20 @@ void ld_imm() {
         ld bc, $1122
         ld de, $3344
         ld hl, $5566
+        ld ix, $99aa
         ld sp, $7788
 
 ", [0x01, 0x22, 0x11,
-     0x11, 0x44, 0x33,
-     0x21, 0x66, 0x55,
-     0x31, 0x88, 0x77]);
+    0x11, 0x44, 0x33,
+    0x21, 0x66, 0x55,
+    0xdd, 0x21, 0xaa, 0x99,
+    0x31, 0x88, 0x77]);
 
     assertFlagsClear(allFlags());
     assert(state.BC == 0x1122);
     assert(state.DE == 0x3344);
     assert(state.HL == 0x5566);
+    assert(state.IX == 0x99aa);
     assert(state.SP == 0x7788);
     //-----------------------------------------
     test("
@@ -373,6 +376,77 @@ void ld_indirect() {
     assert(bus.read(0x6004) == 5);
     assert(bus.read(0x6005) == 0x60);
     assert(bus.read(0x6006) == 6);
+
+    //--------------------------------- ld (ix+d), n
+    // writeBytes(0x0000, [0]);
+    // state.IX = 0x0000;
+    // test("
+    //     ld (ix+$01), $11
+    // ", [0xdd, 0x36, 0x01, 0x11]);
+    // FIXME - handle 2 fixups in same instruction
+
+    //--------------------------------- ld b, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld b, (ix+$01)
+    ", [0xdd, 0x46, 0x01]);
+
+    assert(state.B == 0x07);
+
+    //--------------------------------- ld c, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld c, (ix+$01)
+    ", [0xdd, 0x4e, 0x01]);
+
+    assert(state.C == 0x07);
+
+    //--------------------------------- ld d, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld d, (ix+$01)
+    ", [0xdd, 0x56, 0x01]);
+
+    assert(state.D == 0x07);
+
+    //--------------------------------- ld e, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld e, (ix+$01)
+    ", [0xdd, 0x5e, 0x01]);
+
+    assert(state.E == 0x07);
+
+    //--------------------------------- ld h, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld h, (ix+$01)
+    ", [0xdd, 0x66, 0x01]);
+
+    assert(state.H == 0x07);
+
+    //--------------------------------- ld l, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld l, (ix+$01)
+    ", [0xdd, 0x6e, 0x01]);
+
+    assert(state.L == 0x07);
+
+    //--------------------------------- ld a, (ix+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IX = 0x0000;
+    test("
+        ld a, (ix+$01)
+    ", [0xdd, 0x7e, 0x01]);
+
+    assert(state.A == 0x07);
 }
 void ld_r() {
     cpu.reset();
@@ -442,7 +516,7 @@ void ld_i() {
     assert(state.I == 0x10);
     assertFlagsClear(allFlags());
 }
-void ld_rr_nn() {
+void ld_rr_nn_ED() {
     cpu.reset();
 
     writeBytes(0x0123, [0x01, 0x02]);
@@ -475,13 +549,14 @@ void ld_rr_nn() {
     assert(state.SP == 0x0201);
     assertFlagsClear(allFlags());
 }
-void ld_nn_rr() {
+void ld_nn_rr_ED() {
     cpu.reset();
 
     state.BC = 0x1111;
     state.DE = 0x2222;
     state.HL = 0x3333;
     state.SP = 0x4444;
+    state.IX = 0x5555;
     test("
         ld ($0123), bc
     ", LD_NN_BC ~ [0x23, 0x01]);
@@ -511,6 +586,37 @@ void ld_nn_rr() {
     assert(bus.readWord(0x0123) == 0x4444);
     assertFlagsClear(allFlags());
 }
+void ld_nn_rr() {
+    cpu.reset();
+    state.F = 0;
+
+    state.HL = 0x3333;
+    state.IX = 0x4444;
+    test("
+        ld ($0123), hl
+        ld ($0125), ix
+    ", [0x22]       ~ [0x23, 0x01] ~
+       [0xdd, 0x22] ~ [0x25, 0x01]);
+
+    assert(bus.readWord(0x0123) == 0x3333);
+    assert(bus.readWord(0x0125) == 0x4444);
+    assertFlagsClear(allFlags());
+}
+void ld_rr_nn() {
+    cpu.reset();
+
+    writeBytes(0x0123, [0x01, 0x02, 0x03, 0x04]);
+    test("
+       ld hl, ($0123)
+       ld ix, ($0125)
+    ", [0x2a]       ~ [0x23, 0x01] ~
+       [0xdd, 0x2a] ~ [0x25, 0x01]);
+
+    assert(state.HL == 0x0201);
+    assert(state.IX == 0x0403);
+    assertFlagsClear(allFlags());
+
+}
 
 setup();
 
@@ -519,7 +625,9 @@ ld_rrr();
 ld_indirect();
 ld_r();
 ld_i();
-ld_rr_nn();
+ld_rr_nn_ED();
+ld_nn_rr_ED();
 ld_nn_rr();
+ld_rr_nn();
 
 } //unittest

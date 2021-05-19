@@ -2,57 +2,42 @@ module emulator.chips.z80.instr.instructions;
 
 import emulator.chips.z80.all;
 
-enum {
-// row 0
-    NOP         = 0x00, // nop
-    LD_BC_nn    = 0x01, // ld bc, 0x8543
-    LDD_BC_A    = 0x02, // ldd (bc),a       (bc) = a, dec bc
-    INC_BC      = 0x03, // inc bc
-    INC_B       = 0x04, // inc b
-    DEC_B       = 0x05, // dec b
-    LD_B_n      = 0x06, // ld b, 6
-    RLCA        = 0x07, // rlca
-    EX_AF_AF1   = 0x08, // ex af, af'       swap af with shadow af
-    ADD_HL_BC   = 0x09, // add hl, bc
-    LD_A_BC     = 0x0a, // ld a, (bc)
-    DEC_BC      = 0x0b, // dec bc
-    INC_C       = 0x0c, // inc c
-    DEC_C       = 0x0d, // dec c
-    LD_C_n      = 0x0e, // ld c, 4
-    RRCA        = 0x0f, // rrca
-// row 1
-    DJNZ_n      = 0x10, // djnz 10          decrement b, jump if not zero
-    LD_DE_nn    = 0x11, // ld de, 0x1234
-    LD_DE_A     = 0x12, // ld (de), a
-    INC_DE      = 0x13, // inc de
-    INC_D       = 0x14, // inc d
-    DEC_D       = 0x15, // dec d
-    LD_D_n      = 0x16, // ld d, 5
-    RLA         = 0x17, // rla
-    JR_e        = 0x18, // jr 0x7f          (-126 to +129)
-}
-
 struct Instruction {
     ubyte code;
     const Strategy strategy;
     string[] tokens;
     string[] alt;   // alternative syntax
 
+    bool isValid() const {
+        return strategy !is null;
+    }
     void execute(Z80 cpu, Op op) const {
         strategy.execute(cpu, op);
     }
     int numExtraBytes() const {
-        return tokens.contains(N) ? 1 : tokens.contains(NN) ? 2 : 0;
-    }
-    int indexOfLiteral() const {
-        auto a = tokens.indexOf(N);
-        if(a!=-1) return a;
-        return tokens.indexOf(NN);
+        uint count = 0;
+        auto toks = alt ? alt : tokens;
+        foreach(t; toks) {
+            if(t==N) count++;
+            else if(t==NN) count+=2;
+        }
+        return count;
     }
 }
 struct Op {
-    ubyte byte1;
-    ubyte byte2;
+    ubyte code;
+
+    Reg indexReg = Reg.HL; // HL, IX, IY
+
+}
+byte getDisplacement(Z80 cpu, Op op) {
+    if(op.indexReg == Reg.HL) return 0;
+    ubyte d = cpu.fetchByte();
+    return d;
+}
+// HL ; IX+d ; IY+d
+ushort getHLIXdIYd(Z80 cpu, Op op) {
+    return (cpu.state.getReg16(op.indexReg) + getDisplacement(cpu, op)).as!ushort;
 }
 private {
     enum : string {

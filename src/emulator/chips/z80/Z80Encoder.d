@@ -28,8 +28,8 @@ final class Z80Encoder : Encoder {
         this.REGS.add([
             "a","b","c","d","e","h","l",
             "r", "i",
-            "af","bc","de","hl","sp",
-            "af'"
+            "af","af'",
+            "bc","de","hl","sp","ix","iy",
         ]);
         this.CC = new Set!string;
         this.CC.add(["c", "nc", "z", "nz", "po", "pe", "p", "m"]);
@@ -51,15 +51,15 @@ final class Z80Encoder : Encoder {
             }
             enc.bytes ~= match.instr.code;
 
-            if(match.numFixupBytes>0) {
-                enc.numFixupBytes = match.numFixupBytes;
-                enc.fixupTokenIndex = match.fixupTokenIndex;
+            //handleAwkwardInstructions(enc);
 
-                foreach(n; 0..match.numFixupBytes) {
+            foreach(f; match.fixups) {
+                enc.fixups = match.fixups.dup;
+
+                foreach(n; 0..f.numBytes) {
                     enc.bytes ~= 0;
                 }
             }
-            enc.fixupTokens = match.fixupTokens;
 
             //writefln("  %s fixup num:%s", enc.bytes.map!(it=>"%02x".format(it).array), enc.numFixupBytes);
         } else {
@@ -84,19 +84,15 @@ private:
         InstrPtr instr;
         ubyte hashByte;
         bool isAlt;
-        int numFixupBytes;
-        int fixupTokenIndex;
-        string[] fixupTokens;
         bool possibleCC;
+        Encoder.Fixup[] fixups;
 
         void reset() {
             instr = null;
             hashByte = 0;
             isAlt = false;
-            numFixupBytes = 0;
-            fixupTokenIndex = 0;
-            fixupTokens = null;
             possibleCC = false;
+            fixups.length = 0;
         }
         override string toString() {
             if(instr is null) return "No match";
@@ -119,6 +115,7 @@ private:
             }
         }
     }
+    /** Prepare 'rst' instructions */
     void handleSpecialCases(string[] tokens) {
         // rst - convert decimal to hex and remove $ or &
         if(tokens.length==2 && "rst"==tokens[0]) {
@@ -127,6 +124,18 @@ private:
                 tokens[1] = tokens[1][1..$];
             } else if(!n.isOneOf("10", "18", "20", "28", "30", "38")) {
                 tokens[1] = "%02x".format(tokens[1].to!int(10));
+            }
+        }
+    }
+    /** Fix the two awkward 0x36 cases */
+    void handleAwkwardInstructions(Encoder.Encoding enc) {
+        if(enc.bytes.length > 1) {
+            if(enc.bytes[0] == 0xdd && enc.bytes[1]==0x36) {
+                //  ld (ix+d), n  [0xdd, 0x36, d, n]
+
+            }
+            if(enc.bytes[0] == 0xfd && enc.bytes[1]==0x36) {
+                //  ld (iy+d), n  [0xfd, 0x36, d, n]
             }
         }
     }
@@ -159,10 +168,11 @@ private:
 
             auto isn  = isN(asmTokens[i], instrTokens[i]);
             auto isnn = !isn && isNN(asmTokens[i], instrTokens[i]);
+            Encoder.Fixup fixup;
 
             if(isn || isnn) {
-                match.numFixupBytes   = isn ? 1 : 2;
-                match.fixupTokenIndex = i;
+                fixup.numBytes = isn ? 1 : 2;
+                fixup.tokenIndex = i;
 
                 if(asmTokens[i]=="(") {
                     // assume this instruction has indirect memory access
@@ -172,15 +182,14 @@ private:
 
                 auto end = matchTokensBackwards(asmTokens, instrTokens);
                 if(end != -1) {
-                    match.fixupTokens = asmTokens[i..end+1];
+                    fixup.tokens = asmTokens[i..end+1];
+                    match.fixups ~= fixup;
                     return true;
                 } else {
                     return false;
                 }
 
             } else if(asmTokens[i] != instrTokens[i]) {
-                match.numFixupBytes = 0;
-                match.fixupTokenIndex = 0;
                 return false;
             }
         }

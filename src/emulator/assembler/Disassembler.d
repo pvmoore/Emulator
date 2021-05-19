@@ -28,13 +28,18 @@ final class Disassembler {
                 line.tokens = decoding.tokens;
                 line.code   = code[offset..offset+decoding.numBytes];
 
-                if(decoding.numLiteralBytes == 1) {
-                    auto i = decoding.literalTokenIndex;
-                    line.tokens[i] = "$" ~ line.tokens[i].format(line.code[decoding.numBytes-1]);
-                } else if(decoding.numLiteralBytes == 2) {
-                    auto i = decoding.literalTokenIndex;
-                    line.tokens[i] = "$" ~ line.tokens[i].format(
-                        (line.code[decoding.numBytes-1]<<8) | line.code[decoding.numBytes-2]);
+                auto n = decoding.numBytes - decoding.numLiteralBytes;
+
+                foreach(i, tok; line.tokens) {
+                    if(tok=="%02x") {
+                        line.tokens[i] = "$" ~ line.tokens[i].format(line.code[n]);
+                        n++;
+                    } else if(tok=="%04x") {
+                        line.tokens[i] = "$" ~ line.tokens[i].format(
+                            line.code[n] | (line.code[n+1]<<8)
+                        );
+                        n += 2;
+                    }
                 }
 
                 pc     += decoding.numBytes;

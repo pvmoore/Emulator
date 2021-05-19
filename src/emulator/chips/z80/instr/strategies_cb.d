@@ -35,7 +35,7 @@ final class RLC_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2) & 7;
+        auto rrr = (op.code) & 7;
         ubyte before;
         ubyte after;
 
@@ -79,7 +79,7 @@ final class RRC_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2) & 7;
+        auto rrr = (op.code) & 7;
         ubyte before;
         ubyte after;
 
@@ -123,7 +123,7 @@ final class RL_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2) & 7;
+        auto rrr = (op.code) & 7;
         ubyte before;
         ubyte after;
         ubyte c = s.flagC() ? 1 : 0;
@@ -168,7 +168,7 @@ final class RR_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2) & 7;
+        auto rrr = (op.code) & 7;
         ubyte before;
         ubyte after;
         ubyte c = s.flagC() ? 0x80 : 0;
@@ -213,7 +213,7 @@ final class SLA_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = op.byte2 & 7;
+        auto rrr = op.code & 7;
         ubyte before;
         ubyte after;
 
@@ -259,7 +259,7 @@ final class SRA_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = op.byte2 & 7;
+        auto rrr = op.code & 7;
         ubyte before;
         ubyte after;
 
@@ -304,7 +304,7 @@ final class SRL_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto rrr = (op.byte2) & 7;
+        auto rrr = (op.code) & 7;
         ubyte before;
         ubyte after;
 
@@ -348,8 +348,8 @@ final class BIT_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s    = cpu.state;
-        auto rrr  = (op.byte2) & 7;
-        auto bbb  = (op.byte2>>>3) & 7;
+        auto rrr  = (op.code) & 7;
+        auto bbb  = (op.code>>>3) & 7;
         auto mask = 1<<bbb;
         ubyte value;
 
@@ -391,8 +391,8 @@ final class RES_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s    = cpu.state;
-        auto rrr  = (op.byte2) & 7;
-        auto bbb  = (op.byte2>>>3) & 7;
+        auto rrr  = (op.code) & 7;
+        auto bbb  = (op.code>>>3) & 7;
         auto mask = ~(1<<bbb);
 
         // 4 clocks
@@ -430,8 +430,8 @@ final class SET_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s    = cpu.state;
-        auto rrr  = (op.byte2) & 7;
-        auto bbb  = (op.byte2>>>3) & 7;
+        auto rrr  = (op.code) & 7;
+        auto bbb  = (op.code>>>3) & 7;
         auto or   = 1<<bbb;
 
         // 4 clocks

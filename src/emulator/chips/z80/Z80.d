@@ -29,42 +29,66 @@ public:
         state.PC = addr;
     }
     Instruction execute() {
-        auto op     = Op(fetchByte());
-        auto index  = op.byte1;
-        auto table  = cast(Instruction*)&primary;
-        auto offset = 0;
+        ubyte[] codes;
+        const(Instruction)* instruction;
+        auto op = Op(0x00, Reg.HL);
 
-        switch(index) {
-            case 0xCB:
-                table = cast(Instruction*)groupCB;
-                index = op.byte2 = fetchByte();
-                break;
-            case 0xDD:
-                table = cast(Instruction*)groupDD;
-                index = op.byte2 = fetchByte();
-                break;
-            case 0xED:
-                table  = cast(Instruction*)groupED;
-                index  = op.byte2 = fetchByte();
-                offset = 0x40;
-                break;
-            case 0xFD:
-                table = cast(Instruction*)groupFD;
-                index = op.byte2 = fetchByte();
-                break;
-            default:
-                break;
+        void _fetch() {
+            codes ~= (op.code = fetchByte());
+        }
+        void _decodePrimary() {
+            instruction = &primary[op.code];
+        }
+        void _decodeCB() {
+            _fetch();
+            instruction = &groupCB[op.code];
+        }
+        void _decodeED() {
+            _fetch();
+            instruction = &groupED[op.code];
+        }
+        void _decodeDD() {
+            _fetch();
+            op.indexReg = Reg.IX;
+            if(op.code == 0xcb) {
+                _decodeCB();
+            } else {
+                instruction = &groupDD[op.code];
+                if(!instruction) {
+                    //instruction = primary[op.code];
+                }
+            }
+        }
+        void _decodeFD() {
+            _fetch();
+            op.indexReg = Reg.IY;
+            if(op.code == 0xcb) {
+                _decodeCB();
+            } else {
+                instruction = &groupFD[op.code];
+                if(!instruction) {
+                    //instruction = primary[op.code];
+                }
+            }
         }
 
-        Instruction instruction = table[index - offset];
+        _fetch();
 
-        if(instruction.strategy is null) {
-            throw new Exception("op %02x not implemented".format(op.byte1));
+        switch(op.code) {
+            case 0xCB: _decodeCB(); break;
+            case 0xDD: _decodeDD(); break;
+            case 0xED: _decodeED(); break;
+            case 0xFD: _decodeFD(); break;
+            default: _decodePrimary(); break;
+        }
+
+        if(!instruction) {
+            throw new Exception("op %s not implemented".format(toHexStringArray(codes)));
         }
 
         instruction.execute(this, op);
 
-        return instruction;
+        return cast(Instruction)*instruction;
     }
     ubyte pop() {
         return readByte(state.SP++);
@@ -129,4 +153,6 @@ public:
     void writeWord(ushort addr, ushort value) {
         bus.writeWord(addr, value);
     }
+private:
+
 }

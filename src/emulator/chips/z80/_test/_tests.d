@@ -122,7 +122,10 @@ void test(string source, ubyte[] code) {
     // Assemble source
     assembler.reset();
     auto aLines = assembler.encode(source);
-    //writefln("aLines = %s", aLines);
+    // writefln("aLines:");
+    // foreach(al; aLines) {
+    //    writefln("\t%s", al);
+    // }
     assert(aLines.length==sourceLines.length,
         "aLines.length = %s, sourceLines.length = %s".format(aLines.length, sourceLines.length));
     auto encoded = extractCode(aLines);
@@ -131,8 +134,11 @@ void test(string source, ubyte[] code) {
 
     // Disassemble code
     auto dLines = disassembler.decode(code, 0);
-    //writefln("dLines = %s", dLines);
-    assert(dLines.length==sourceLines.length);
+    // writefln("dLines:");
+    // foreach(dl; dLines) {
+    //    writefln("\t%s", dl);
+    // }
+    assert(dLines.length==sourceLines.length, "%s != %s".format(dLines.length, sourceLines.length));
     foreach(i, l; dLines) {
         assert(concatAndRemoveSpace(l.tokens) == removeSpace(sourceLines[i]),
             "%s != %s".format(concatAndRemoveSpace(l.tokens), removeSpace(sourceLines[i])));

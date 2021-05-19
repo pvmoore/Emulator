@@ -77,6 +77,7 @@ private:
     static struct Fixup {
         uint address;
         uint numBytes;
+        uint byteIndex;
         string[] expressionTokens;
     }
 
@@ -176,12 +177,16 @@ private:
 
             line.code = encoding.bytes.dup;
 
-            if(encoding.numFixupBytes>0) {
-                uint index = encoding.fixupTokenIndex;
+            auto j = line.code.length.as!uint - encoding.totalFixupBytes();
 
-                log("fixup index: %s, expression: %s", index, encoding.fixupTokens);
+            foreach(f; encoding.fixups) {
+                uint index = f.tokenIndex;
 
-                fixups ~= Fixup(pc, encoding.numFixupBytes, encoding.fixupTokens);
+                log("fixup index: %s, expression: %s", index, f.tokens);
+
+                fixups ~= Fixup(pc, f.numBytes, j, f.tokens);
+
+                j += f.numBytes;
             }
 
             pc += line.code.length.as!int;
@@ -203,18 +208,19 @@ private:
         foreach(f; fixups) {
             auto line = getLineAtAddress(f.address);
             auto numBytes = f.numBytes;
+            auto byteIndex = f.byteIndex;
 
             uint value = exprParser.parse(convertNumbersToInt(f.expressionTokens));
             //log("fixup address %04x value = %s", f.address, value);
             if(numBytes==1) {
-                line.code[$-1] = value.as!ubyte;
+                line.code[byteIndex] = value.as!ubyte;
             } else if(numBytes==2) {
                 if(littleEndian) {
-                    line.code[$-2] = (value & 0xff).as!ubyte;
-                    line.code[$-1] = ((value>>>8) & 0xff).as!ubyte;
+                    line.code[byteIndex+0] = (value & 0xff).as!ubyte;
+                    line.code[byteIndex+1] = ((value>>>8) & 0xff).as!ubyte;
                 } else {
-                    line.code[$-2] = ((value>>>8) & 0xff).as!ubyte;
-                    line.code[$-1] = (value & 0xff).as!ubyte;
+                    line.code[byteIndex+0] = ((value>>>8) & 0xff).as!ubyte;
+                    line.code[byteIndex+1] = (value & 0xff).as!ubyte;
                 }
             } else {
                 todo("handle more than 2 fixup bytes");
