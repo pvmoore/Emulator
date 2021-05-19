@@ -194,6 +194,7 @@ private:
             if(isn || isnn) {
                 fixup.numBytes = isn ? 1 : 2;
                 fixup.tokenIndex = i;
+                fixup.isRelative = asmTokens[0] == "jr";
 
                 if(asmTokens[i]=="(") {
                     // assume this instruction has indirect memory access

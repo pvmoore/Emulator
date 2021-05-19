@@ -118,7 +118,7 @@ Instruction[256] groupED = [
     Instruction(0x60, _inrc,      [IN, H, _, LBR, C, RBR]),
     Instruction(0x61, _outcr,     [OUT, LBR, C, RBR, _, H]),
     Instruction(0x62, _sbchlss,   [SBC, HL, _, HL]),
-    Instruction(0x63, _ldnndd,    [LD, LBR, NN, RBR, _, HL]),
+    Instruction(0x63, _ldnndd,    [LD, LBR, NN, RBR, _, HL]), // undocumented?
     Instruction(0x64), // nothing here ? neg
     Instruction(0x65), // nothing here ? retn
     Instruction(0x66), // nothing here
@@ -126,7 +126,7 @@ Instruction[256] groupED = [
     Instruction(0x68, _inrc,      [IN, L, _, LBR, C, RBR]),
     Instruction(0x69, _outcr,     [OUT, LBR, C, RBR, _, L]),
     Instruction(0x6a, _adchhss,   [ADC, HL, _, HL]),
-    Instruction(0x6b, _ldddnni,   [LD, HL, _, LBR, NN, RBR]),
+    Instruction(0x6b, _ldddnni,   [LD, HL, _, LBR, NN, RBR]), // undocumented?
     Instruction(0x6c), // nothing here ? neg
     Instruction(0x6d), // nothing here ? retn
     Instruction(0x6e), // nothing here

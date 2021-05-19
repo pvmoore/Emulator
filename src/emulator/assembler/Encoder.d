@@ -23,6 +23,7 @@ interface Encoder {
     static struct Fixup {
         int numBytes;
         int tokenIndex;
+        bool isRelative;
         string[] tokens;
     }
 

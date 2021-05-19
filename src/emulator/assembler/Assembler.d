@@ -78,6 +78,7 @@ private:
         uint address;
         uint numBytes;
         uint byteIndex;
+        bool isRelative;
         string[] expressionTokens;
     }
 
@@ -156,6 +157,7 @@ private:
 
                 // Remove the label token
                 strings = strings[1..$];
+                line.tokens = strings;
 
                 return true;
             }
@@ -184,7 +186,7 @@ private:
 
                 log("fixup tokenIindex: %s, byteIndex: %s, expression: %s", index, j, f.tokens);
 
-                fixups ~= Fixup(pc, f.numBytes, j, f.tokens);
+                fixups ~= Fixup(pc, f.numBytes, j, f.isRelative, f.tokens);
 
                 j += f.numBytes;
             }
@@ -197,12 +199,15 @@ private:
      * Implement Fixups.
      */
     void pass2() {
-        auto exprParser = new ExpressionParser!int;
+        auto absExprParser = new ExpressionParser!int;
+        auto relExprParser = new ExpressionParser!int;
         foreach(k,v; constants) {
-            exprParser.addReference(k, v);
+            absExprParser.addReference(k, v);
+            relExprParser.addReference(k, v);
         }
         foreach(k,v; labelToAddress) {
-            exprParser.addReference(k, v);
+            absExprParser.addReference(k, v);
+            relExprParser.addReference(k, ["(", v.to!string, "-", "$", ")"]);
         }
 
         foreach(f; fixups) {
@@ -210,8 +215,15 @@ private:
             auto numBytes = f.numBytes;
             auto byteIndex = f.byteIndex;
 
-            uint value = exprParser.parse(convertNumbersToInt(f.expressionTokens));
+            absExprParser.addReference("$", f.address);
+            relExprParser.addReference("$", f.address);
+
+            uint value = f.isRelative
+                ? relExprParser.parse(convertNumbersToInt(f.expressionTokens))
+                : absExprParser.parse(convertNumbersToInt(f.expressionTokens));
+
             //log("fixup address %04x value = %s", f.address, value);
+
             if(numBytes==1) {
                 line.code[byteIndex] = value.as!ubyte;
             } else if(numBytes==2) {
