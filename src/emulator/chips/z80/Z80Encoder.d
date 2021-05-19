@@ -51,7 +51,7 @@ final class Z80Encoder : Encoder {
             }
             enc.bytes ~= match.instr.code;
 
-            //handleAwkwardInstructions(enc);
+            handleAwkwardInstructions(enc, asmTokens);
 
             foreach(f; match.fixups) {
                 enc.fixups = match.fixups.dup;
@@ -128,14 +128,32 @@ private:
         }
     }
     /** Fix the two awkward 0x36 cases */
-    void handleAwkwardInstructions(Encoder.Encoding enc) {
+    void handleAwkwardInstructions(Encoder.Encoding enc, string[] asmTokens) {
         if(enc.bytes.length > 1) {
-            if(enc.bytes[0] == 0xdd && enc.bytes[1]==0x36) {
-                //  ld (ix+d), n  [0xdd, 0x36, d, n]
+            auto isDD36 = enc.bytes[0] == 0xdd && enc.bytes[1]==0x36;
+            auto isFD36 = enc.bytes[0] == 0xfd && enc.bytes[1]==0x36;
 
-            }
-            if(enc.bytes[0] == 0xfd && enc.bytes[1]==0x36) {
-                //  ld (iy+d), n  [0xfd, 0x36, d, n]
+            //  ld (ix+d), n  [0xdd, 0x36, d, n]
+            //  ld (iy+d), n  [0xfd, 0x36, d, n]
+            // ["ld", "(", "ix", "+", "$01", ")", ",", "$11"]
+            // ["ld", "(", "iy", "+", "$01", ")", ",", "$11"]
+            if(isDD36 || isFD36) {
+                // Split the single Fixup into two
+
+                assert(match.fixups.length == 1);
+                match.fixups ~= Encoder.Fixup();
+
+                auto f1 = match.fixups.ptr;
+                auto f2 = f1+1;
+
+                auto comma = match.fixups[0].tokens.indexOf(",");
+                assert(comma!=-1);
+                assert(f1.tokens[comma-1] == ")");
+                f2.numBytes = 1;
+                f2.tokenIndex = f1.tokenIndex + comma + 1;
+                f2.tokens = f1.tokens[comma+1..$].dup;
+
+                f1.tokens = f1.tokens[0..comma-1];
             }
         }
     }

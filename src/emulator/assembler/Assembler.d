@@ -182,7 +182,7 @@ private:
             foreach(f; encoding.fixups) {
                 uint index = f.tokenIndex;
 
-                log("fixup index: %s, expression: %s", index, f.tokens);
+                log("fixup tokenIindex: %s, byteIndex: %s, expression: %s", index, j, f.tokens);
 
                 fixups ~= Fixup(pc, f.numBytes, j, f.tokens);
 

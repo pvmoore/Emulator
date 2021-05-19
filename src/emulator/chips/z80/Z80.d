@@ -28,7 +28,7 @@ public:
     void setPC(ushort addr) {
         state.PC = addr;
     }
-    Instruction execute() {
+    const(Instruction)* execute() {
         ubyte[] codes;
         const(Instruction)* instruction;
         auto op = Op(0x00, Reg.HL);
@@ -88,7 +88,7 @@ public:
 
         instruction.execute(this, op);
 
-        return cast(Instruction)*instruction;
+        return instruction;
     }
     ubyte pop() {
         return readByte(state.SP++);

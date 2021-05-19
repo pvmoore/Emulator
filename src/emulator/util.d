@@ -39,7 +39,7 @@ string toHexStringArray(ubyte[] bytes) {
     }
     return s;
 }
-string toString(string[] tokens) {
+string toString(inout string[] tokens) {
     string buf;
     foreach(i, s; tokens) {
         if(i>0) buf ~= " ";

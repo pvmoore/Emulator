@@ -378,12 +378,13 @@ void ld_indirect() {
     assert(bus.read(0x6006) == 6);
 
     //--------------------------------- ld (ix+d), n
-    // writeBytes(0x0000, [0]);
-    // state.IX = 0x0000;
-    // test("
-    //     ld (ix+$01), $11
-    // ", [0xdd, 0x36, 0x01, 0x11]);
-    // FIXME - handle 2 fixups in same instruction
+
+    // This one is awkward because it has 2 fixups
+    writeBytes(0x0000, [0]);
+    state.IX = 0x0000;
+    test("
+        ld (ix+$01), $11
+    ", [0xdd, 0x36, 0x01, 0x11]);
 
     //--------------------------------- ld b, (ix+d)
     writeBytes(0x0000, [0x00, 0x07]);
