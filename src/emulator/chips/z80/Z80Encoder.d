@@ -20,9 +20,11 @@ final class Z80Encoder : Encoder {
         _hash(groupDD.ptr, groupDD.length, hashDD);
         _hash(groupED.ptr, groupED.length, hashED);
         _hash(groupFD.ptr, groupFD.length, hashFD);
+        _hash(groupDDCB.ptr, groupDDCB.length, hashDDCB);
+        _hash(groupFDCB.ptr, groupFDCB.length, hashFDCB);
 
-        this.hashes   = [hash, hashCB, hashDD, hashED, hashFD];
-        this.prefixes = [0x00, 0xcb, 0xdd, 0xed, 0xfd];
+        this.hashes   = [hash,   hashCB, hashDD, hashED, hashFD, hashDDCB,     hashFDCB];
+        this.prefixes = [[0x00], [0xcb], [0xdd], [0xed], [0xfd], [0xdd, 0xcb], [0xfd, 0xcb]];
         this.match    = new Match();
         this.REGS = new Set!string;
         this.REGS.add([
@@ -46,8 +48,8 @@ final class Z80Encoder : Encoder {
 
         if(match.instr) {
 
-            if(match.hashByte!=0) {
-                enc.bytes ~= match.hashByte;
+            if(match.hashBytes[0]!=0) {
+                enc.bytes ~= match.hashBytes;
             }
             enc.bytes ~= match.instr.code;
 
@@ -75,28 +77,30 @@ private:
     Hash hash;
     Hash hashCB;
     Hash hashDD;
+    Hash hashDDCB;
     Hash hashED;
     Hash hashFD;
+    Hash hashFDCB;
     Hash[] hashes;
-    ubyte[] prefixes;
+    ubyte[][] prefixes;
 
     static class Match {
         InstrPtr instr;
-        ubyte hashByte;
+        ubyte[] hashBytes;
         bool isAlt;
         bool possibleCC;
         Encoder.Fixup[] fixups;
 
         void reset() {
             instr = null;
-            hashByte = 0;
+            hashBytes.length = 0;
             isAlt = false;
             possibleCC = false;
             fixups.length = 0;
         }
         override string toString() {
             if(instr is null) return "No match";
-            if(hashByte!=0) return "Match %02x,%02x%s".format(hashByte, instr.code, isAlt?" ALT" : "");
+            if(hashBytes[0]!=0) return "Match %02x,%02x%s".format(hashBytes, instr.code, isAlt?" ALT" : "");
             return "Match %02x%s".format(instr.code, isAlt?" ALT" : "");
         }
     }
@@ -110,7 +114,7 @@ private:
 
         foreach(i, h; hashes) {
             if(checkHash(h, opcode, tokens)) {
-                match.hashByte = prefixes[i];
+                match.hashBytes = prefixes[i].dup;
                 return;
             }
         }
@@ -136,7 +140,6 @@ private:
             //  ld (ix+d), n  [0xdd, 0x36, d, n]
             //  ld (iy+d), n  [0xfd, 0x36, d, n]
             // ["ld", "(", "ix", "+", "$01", ")", ",", "$11"]
-            // ["ld", "(", "iy", "+", "$01", ")", ",", "$11"]
             if(isDD36 || isFD36) {
                 // Split the single Fixup into two
 

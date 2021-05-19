@@ -36,6 +36,11 @@ enum {
     SBC_HL_DE = [0xed, 0x52],
     SBC_HL_HL = [0xed, 0x62],
     SBC_HL_SP = [0xed, 0x72],
+
+    ADC_IX = [0xdd, 0x8e],
+    ADC_IY = [0xfd, 0x8e],
+    SBC_IX = [0xdd, 0x9e],
+    SBC_IY = [0xfd, 0x9e],
 }
 
 void adc() {
@@ -194,6 +199,31 @@ void adc() {
     assertFlagsSet();
     assertFlagsClear(C, H, N, PV, S, Z);
 
+    //------------------------- adc a, (ix+d)
+    state.A = 0x02;
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0x07]);
+    state.flagC(true);
+    test("
+        adc a, (ix + $01)
+    ", ADC_IX ~ [0x01]);
+
+    assert(state.A == 0x09 + 1);
+    assertFlagsSet();
+    assertFlagsClear(C, H, N, PV, S, Z);
+
+    //------------------------- adc a, (iy+d)
+    state.A = 0x02;
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0x07]);
+    state.flagC(true);
+    test("
+        adc a, (iy + $01)
+    ", ADC_IY ~ [0x01]);
+
+    assert(state.A == 0x09 + 1);
+    assertFlagsSet();
+    assertFlagsClear(C, H, N, PV, S, Z);
 }
 void sbc() {
     cpu.reset();
@@ -354,6 +384,32 @@ void sbc() {
     test("
         sbc a, (hl)
     ", [SBC_HL]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, (ix+d)
+    state.A = 0x0f;
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0x0f]);
+    state.flagC(true);
+    test("
+        sbc a, (ix+$01)
+    ", SBC_IX ~ [0x01]);
+
+    assert(state.A == 0xff);
+    assertFlagsSet(N, C, S);
+    assertFlagsClear(Z, PV, H);
+
+    //------------------------------------------ sbc a, (iy+d)
+    state.A = 0x0f;
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0x0f]);
+    state.flagC(true);
+    test("
+        sbc a, (iy+$01)
+    ", SBC_IY ~ [0x01]);
 
     assert(state.A == 0xff);
     assertFlagsSet(N, C, S);

@@ -30,7 +30,15 @@ final class Z80Decoder : Decoder {
                 if(code.length>1) {
                     numBytes++;
                     auto b = code[1];
-                    instr = &groupDD[b];
+                    if(b==0xcb) {
+                        if(code.length > 2) {
+                            numBytes++;
+                            b = code[2];
+                            instr = &groupDDCB[b];
+                        }
+                    } else {
+                        instr = &groupDD[b];
+                    }
                 }
                 break;
             }
@@ -46,7 +54,15 @@ final class Z80Decoder : Decoder {
                 if(code.length>1) {
                     numBytes++;
                     auto b = code[1];
-                    instr = &groupFD[b];
+                    if(b==0xcb) {
+                        if(code.length > 2) {
+                            numBytes++;
+                            b = code[2];
+                            instr = &groupFDCB[b];
+                        }
+                    } else {
+                        instr = &groupFD[b];
+                    }
                 }
                 break;
             }
@@ -61,13 +77,7 @@ final class Z80Decoder : Decoder {
 
             dec.numLiteralBytes = numLiteralBytes;
             dec.numBytes = numBytes + numLiteralBytes;
-
-            if(instr.alt.contains("ix") || instr.alt.contains("iy")) {
-                // Prefer the alt tokens if this is a DD or FD instruction
-                dec.tokens = instr.alt.dup;
-            } else {
-                dec.tokens = instr.tokens.dup;
-            }
+            dec.tokens = instr.tokens.dup;
         }
     }
 private:

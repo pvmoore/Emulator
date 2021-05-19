@@ -48,8 +48,9 @@ final class RLC_r : Strategy {
             case 4: before = s.H; s.H = after = ((s.H<<1) | (before>>>7)).as!ubyte; break;
             case 5: before = s.L; s.L = after = ((s.L<<1) | (before>>>7)).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before<<1) | (before>>>7)).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = ((before<<1) | (before>>>7)).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = ((s.A<<1) | (before>>>7)).as!ubyte; break;
         }
@@ -92,8 +93,9 @@ final class RRC_r : Strategy {
             case 4: before = s.H; s.H = after = ((s.H>>>1) | ((before<<7)&0x80)).as!ubyte; break;
             case 5: before = s.L; s.L = after = ((s.L>>>1) | ((before<<7)&0x80)).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before>>>1) | ((before<<7)&0x80)).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = ((before>>>1) | ((before<<7)&0x80)).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = ((s.A>>>1) | ((before<<7)&0x80)).as!ubyte; break;
         }
@@ -137,8 +139,9 @@ final class RL_r : Strategy {
             case 4: before = s.H; s.H = after = ((s.H<<1) | c).as!ubyte; break;
             case 5: before = s.L; s.L = after = ((s.L<<1) | c).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before<<1) | c).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = ((before<<1) | c).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = ((s.A<<1) | c).as!ubyte; break;
         }
@@ -182,8 +185,9 @@ final class RR_r : Strategy {
             case 4: before = s.H; s.H = after = ((s.H>>>1) | c).as!ubyte; break;
             case 5: before = s.L; s.L = after = ((s.L>>>1) | c).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before>>>1) | c).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = ((before>>>1) | c).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = ((s.A>>>1) | c).as!ubyte; break;
         }
@@ -227,8 +231,9 @@ final class SLA_r : Strategy {
             case 4: before = s.H; s.H = after = (s.H<<1).as!ubyte; break;
             case 5: before = s.L; s.L = after = (s.L<<1).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = (before<<1).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = (before<<1).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = (s.A<<1).as!ubyte; break;
         }
@@ -273,8 +278,9 @@ final class SRA_r : Strategy {
             case 4: before = s.H; s.H = after = ((s.H>>>1) | (before&0x80)).as!ubyte; break;
             case 5: before = s.L; s.L = after = ((s.L>>>1) | (before&0x80)).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = ((before>>>1) | (before&0x80)).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = ((before>>>1) | (before&0x80)).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = ((s.A>>>1) | (before&0x80)).as!ubyte; break;
         }
@@ -317,8 +323,9 @@ final class SRL_r : Strategy {
             case 4: before = s.H; s.H = after = (s.H>>>1).as!ubyte; break;
             case 5: before = s.L; s.L = after = (s.L>>>1).as!ubyte; break;
             case 6:
-                before = cpu.readByte(s.HL);
-                cpu.writeByte(s.HL, after = (before>>>1).as!ubyte);
+                auto addr = getHLIXdIYd(cpu, op);
+                before = cpu.readByte(addr);
+                cpu.writeByte(addr, after = (before>>>1).as!ubyte);
                 break;
             default:  before = s.A; s.A = after = (s.A>>>1).as!ubyte; break;
         }
@@ -363,7 +370,8 @@ final class BIT_r : Strategy {
             case 4: value = s.H; break;
             case 5: value = s.L; break;
             case 6:
-                value = cpu.readByte(s.HL);
+                auto addr = getHLIXdIYd(cpu, op);
+                value = cpu.readByte(addr);
                 break;
             default: value = s.A; break;
         }
@@ -405,8 +413,9 @@ final class RES_r : Strategy {
             case 4: s.H = (s.H&mask).as!ubyte; break;
             case 5: s.L = (s.L&mask).as!ubyte; break;
             case 6:
-                ubyte value = (cpu.readByte(s.HL)&mask).as!ubyte;
-                cpu.writeByte(s.HL, value);
+                auto addr = getHLIXdIYd(cpu, op);
+                ubyte value = (cpu.readByte(addr)&mask).as!ubyte;
+                cpu.writeByte(addr, value);
                 break;
             default: s.A = (s.A&mask).as!ubyte; break;
         }
@@ -443,8 +452,9 @@ final class SET_r : Strategy {
             case 4: s.H = (s.H|or).as!ubyte; break;
             case 5: s.L = (s.L|or).as!ubyte; break;
             case 6:
-                ubyte value = (cpu.readByte(s.HL)|or).as!ubyte;
-                cpu.writeByte(s.HL, value);
+                auto addr = getHLIXdIYd(cpu, op);
+                ubyte value = (cpu.readByte(addr)|or).as!ubyte;
+                cpu.writeByte(addr, value);
                 break;
             default: s.A = (s.A|or).as!ubyte; break;
         }

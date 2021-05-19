@@ -139,7 +139,27 @@ void ex_exx() {
         ex (sp), hl
     ", [0xe3]);
 
-    assert(state.HL == 0x2345, "%04x".format(state.HL));
+    assert(state.HL == 0x2345);
+    assert(cpu.readWord(0x0000) == 0x1234);
+
+    state.IX = 0x1234;
+    state.SP = 0x0000;
+    writeBytes(0x0000, [0x45, 0x23]);
+    test("
+        ex (sp), ix
+    ", [0xdd, 0xe3]);
+
+    assert(state.IX == 0x2345);
+    assert(cpu.readWord(0x0000) == 0x1234);
+
+    state.IY = 0x1234;
+    state.SP = 0x0000;
+    writeBytes(0x0000, [0x45, 0x23]);
+    test("
+        ex (sp), iy
+    ", [0xfd, 0xe3]);
+
+    assert(state.IY == 0x2345);
     assert(cpu.readWord(0x0000) == 0x1234);
 }
 void di_ei() {

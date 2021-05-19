@@ -23,8 +23,10 @@ import emulator.chips.z80.Z80Ports;
 import emulator.chips.z80.instr.instructions;
 import emulator.chips.z80.instr.instructions_cb;
 import emulator.chips.z80.instr.instructions_dd;
+import emulator.chips.z80.instr.instructions_ddcb;
 import emulator.chips.z80.instr.instructions_ed;
 import emulator.chips.z80.instr.instructions_fd;
+import emulator.chips.z80.instr.instructions_fdcb;
 
 import emulator.chips.z80.instr.strategies;
 import emulator.chips.z80.instr.strategies_cb;

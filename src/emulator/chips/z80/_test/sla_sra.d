@@ -14,6 +14,8 @@ enum {
     SLA_H = [0xcb, 0x24],
     SLA_L = [0xcb, 0x25],
     SLA_HL = [0xcb, 0x26],
+    SLA_IX = [0xdd, 0xcb, 0x26],
+    SLA_IY = [0xfd, 0xcb, 0x26],
 
     SRA_A = [0xcb, 0x2f],
     SRA_B = [0xcb, 0x28],
@@ -23,6 +25,8 @@ enum {
     SRA_H = [0xcb, 0x2c],
     SRA_L = [0xcb, 0x2d],
     SRA_HL = [0xcb, 0x2e],
+    SRA_IX = [0xdd, 0xcb, 0x2e],
+    SRA_IY = [0xfd, 0xcb, 0x2e],
 }
 void sla() {
     cpu.reset();
@@ -118,6 +122,27 @@ void sla() {
     assertFlagsSet(C, S);
     assertFlagsClear(Z, PV, H, N);
 
+    //------------------------------- sla (ix+d)
+    state.IX = 0x0000;
+    writeBytes((0x0001), [0b1111_0000]);
+    test("
+        sla (ix+$01)
+    ", SLA_IX ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0b1110_0000);
+    assertFlagsSet(C, S);
+    assertFlagsClear(Z, PV, H, N);
+
+    //------------------------------- sla (iy+d)
+    state.IY = 0x0000;
+    writeBytes((0x0001), [0b1111_0000]);
+    test("
+        sla (iy+$01)
+    ", SLA_IY ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0b1110_0000);
+    assertFlagsSet(C, S);
+    assertFlagsClear(Z, PV, H, N);
 }
 void sra() {
     cpu.reset();
@@ -219,6 +244,30 @@ void sra() {
     ", SRA_HL);
 
     assert(bus.read(0x0000) == 0b1100_0111);
+    assertFlagsSet(C, S);
+    assertFlagsClear(H, N, Z);
+
+    //------------------------------- sra (ix+d)
+    state.flagC(false);
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0b1000_1111]);
+    test("
+        sra (ix+$01)
+    ", SRA_IX ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0b1100_0111);
+    assertFlagsSet(C, S);
+    assertFlagsClear(H, N, Z);
+
+    //------------------------------- sra (iy+d)
+    state.flagC(false);
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0b1000_1111]);
+    test("
+        sra (iy+$01)
+    ", SRA_IY ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0b1100_0111);
     assertFlagsSet(C, S);
     assertFlagsClear(H, N, Z);
 }

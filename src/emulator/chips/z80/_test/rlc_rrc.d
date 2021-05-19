@@ -14,6 +14,8 @@ enum {
     RLC_H = [0xcb, 0x04],
     RLC_L = [0xcb, 0x05],
     RLC_HL = [0xcb, 0x06],
+    RLC_IX = [0xdd, 0xcb, 0x06],
+    RLC_IY = [0xfd, 0xcb, 0x06],
 
     RRC_A = [0xcb, 0x0f],
     RRC_B = [0xcb, 0x08],
@@ -23,7 +25,8 @@ enum {
     RRC_H = [0xcb, 0x0c],
     RRC_L = [0xcb, 0x0d],
     RRC_HL = [0xcb, 0x0e],
-
+    RRC_IX = [0xdd, 0xcb, 0x0e],
+    RRC_IY = [0xfd, 0xcb, 0x0e],
 }
 void rlc() {
     cpu.reset();
@@ -127,6 +130,29 @@ void rlc() {
     assertFlagsSet(C, PV, S);
     assertFlagsClear(Z);
 
+    //--------------------------------- rlc (ix+d)
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0xff]);
+    state.flagC(false);
+    test("
+        rlc (ix+$01)
+    ", RLC_IX ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0xff);
+    assertFlagsSet(C, PV, S);
+    assertFlagsClear(Z);
+
+    //--------------------------------- rlc (iy+d)
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0xff]);
+    state.flagC(false);
+    test("
+        rlc (iy+$01)
+    ", RLC_IY ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0xff);
+    assertFlagsSet(C, PV, S);
+    assertFlagsClear(Z);
 }
 void rrc() {
     cpu.reset();
@@ -230,6 +256,29 @@ void rrc() {
     assertFlagsSet(C, PV, S);
     assertFlagsClear(Z);
 
+    //--------------------------------- rrc (ix+d)
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0xff]);
+    state.flagC(false);
+    test("
+        rrc (ix+$01)
+    ", RRC_IX ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0xff);
+    assertFlagsSet(C, PV, S);
+    assertFlagsClear(Z);
+
+    //--------------------------------- rrc (iy+d)
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0xff]);
+    state.flagC(false);
+    test("
+        rrc (iy+$01)
+    ", RRC_IY ~ [0x01]);
+
+    assert(bus.read(0x0001) == 0xff);
+    assertFlagsSet(C, PV, S);
+    assertFlagsClear(Z);
 }
 
 setup();

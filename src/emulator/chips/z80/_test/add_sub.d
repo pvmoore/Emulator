@@ -40,6 +40,12 @@ enum {
     ADD_IY_DE = [0xfd, 0x19],
     ADD_IY_IY = [0xfd, 0x29],
     ADD_IY_SP = [0xfd, 0x39],
+
+    ADD_IX = [0xdd, 0x86],
+    ADD_IY = [0xfd, 0x86],
+
+    SUB_IX = [0xdd, 0x96],
+    SUB_IY = [0xfd, 0x96],
 }
 
 void add_n() {
@@ -169,15 +175,25 @@ void add_r() {
 
     assert(state.A == 0x80);
 
-    //--------------------- add a, (ix+1)
-    // state.A = 0x01;
-    // state.IX = 0x0000;
-    // writeBytes(0x0001, [0x7f]);
-    // test("
-    //     add a, (ix + $01)
-    // ", [ADD_IX]);
+    //--------------------- add a, (ix+d)
+    state.A = 0x01;
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0x7f]);
+    test("
+        add a, (ix + $01)
+    ", ADD_IX ~ [0x01]);
 
-    // assert(state.A == 0x80);
+    assert(state.A == 0x80);
+
+    //--------------------- add a, (iy+d)
+    state.A = 0x01;
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0x7f]);
+    test("
+        add a, (iy + $01)
+    ", ADD_IY ~ [0x01]);
+
+    assert(state.A == 0x80);
 }
 void sub_n() {
     cpu.reset();
@@ -286,6 +302,26 @@ void sub_r() {
     ", [SUB_HL]);
 
     assert(state.A == 0xff);
+
+    //--------------------- sub a, (ix+d)
+    state.A = 0x00;
+    state.IX = 0x0000;
+    writeBytes(0x0001, [0x01]);
+    test("
+        sub a, (ix+$01)
+    ", SUB_IX ~ [0x01]);
+
+    assert(state.A == 0xff);
+
+    //--------------------- sub a, (iy+d)
+    state.A = 0x00;
+    state.IY = 0x0000;
+    writeBytes(0x0001, [0x01]);
+    test("
+        sub a, (iy+$01)
+    ", SUB_IY ~ [0x01]);
+
+    assert(state.A == 0xff);
 }
 void add_HL_rr() {
     cpu.reset();
@@ -379,6 +415,49 @@ void add_HL_rr() {
     ", ADD_IX_SP);
 
     assert(state.IX == 0x1112);
+    assertFlagsSet();
+    assertFlagsClear(N, H);
+
+    //--------------------------- add iy, bc
+    state.IY = 0x0102;
+    state.BC = 0x1010;
+    test("
+        add iy, bc
+    ", ADD_IY_BC);
+
+    assert(state.IY == 0x1112);
+    assertFlagsSet();
+    assertFlagsClear(N, H);
+
+    //--------------------------- add iy, de
+    state.IY = 0x0102;
+    state.DE = 0x1010;
+    test("
+        add iy, de
+    ", ADD_IY_DE);
+
+    assert(state.IY == 0x1112);
+    assertFlagsSet();
+    assertFlagsClear(N, H);
+
+    //--------------------------- add iy, iy
+    state.IY = 0x0102;
+    test("
+        add iy, iy
+    ", ADD_IY_IY);
+
+    assert(state.IY == 0x0204);
+    assertFlagsSet();
+    assertFlagsClear(N, H);
+
+    //--------------------------- add iy, sp
+    state.IY = 0x0102;
+    state.SP = 0x1010;
+    test("
+        add iy, sp
+    ", ADD_IY_SP);
+
+    assert(state.IY == 0x1112);
     assertFlagsSet();
     assertFlagsClear(N, H);
 }

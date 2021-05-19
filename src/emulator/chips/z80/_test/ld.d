@@ -29,12 +29,14 @@ void ld_imm() {
         ld de, $3344
         ld hl, $5566
         ld ix, $99aa
+        ld iy, $bbcc
         ld sp, $7788
 
 ", [0x01, 0x22, 0x11,
     0x11, 0x44, 0x33,
     0x21, 0x66, 0x55,
     0xdd, 0x21, 0xaa, 0x99,
+    0xfd, 0x21, 0xcc, 0xbb,
     0x31, 0x88, 0x77]);
 
     assertFlagsClear(allFlags());
@@ -42,6 +44,7 @@ void ld_imm() {
     assert(state.DE == 0x3344);
     assert(state.HL == 0x5566);
     assert(state.IX == 0x99aa);
+    assert(state.IY == 0xbbcc);
     assert(state.SP == 0x7788);
     //-----------------------------------------
     test("
@@ -448,6 +451,210 @@ void ld_indirect() {
     ", [0xdd, 0x7e, 0x01]);
 
     assert(state.A == 0x07);
+
+    //--------------------------------- ld (ix+d), a
+    state.A = 0x11;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), a
+    ", [0xdd, 0x77, 0x02]);
+
+    assert(bus.read(0x0002) == 0x11);
+    //--------------------------------- ld (ix+d), b
+    state.B = 0x12;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), b
+    ", [0xdd, 0x70, 0x02]);
+
+    assert(bus.read(0x0002) == 0x12);
+    //--------------------------------- ld (ix+d), c
+    state.C = 0x13;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), c
+    ", [0xdd, 0x71, 0x02]);
+
+    assert(bus.read(0x0002) == 0x13);
+    //--------------------------------- ld (ix+d), d
+    state.D = 0x14;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), d
+    ", [0xdd, 0x72, 0x02]);
+
+    assert(bus.read(0x0002) == 0x14);
+    //--------------------------------- ld (ix+d), e
+    state.E = 0x15;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), e
+    ", [0xdd, 0x73, 0x02]);
+
+    assert(bus.read(0x0002) == 0x15);
+    //--------------------------------- ld (ix+d), h
+    state.H = 0x16;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), h
+    ", [0xdd, 0x74, 0x02]);
+
+    assert(bus.read(0x0002) == 0x16);
+    //--------------------------------- ld (ix+d), l
+    state.L = 0x17;
+    state.IX = 0x0000;
+    test("
+        ld (ix+$02), l
+    ", [0xdd, 0x75, 0x02]);
+
+    assert(bus.read(0x0002) == 0x17);
+    //--------------------------------- ld a, (ix+d)
+    writeBytes(0x0000, [0, 0, 0, 0x33]);
+    state.IX = 0x0000;
+    test("
+        ld a, (ix+$03)
+    ", [0xdd, 0x7e, 0x03]);
+
+    assert(bus.read(0x0003) == 0x33);
+
+
+
+    //--------------------------------- ld (iy+d), n
+
+    // This one is awkward because it has 2 fixups
+    writeBytes(0x0000, [0]);
+    state.IY = 0x0000;
+    test("
+        ld (iy+$01), $11
+    ", [0xfd, 0x36, 0x01, 0x11]);
+
+    //--------------------------------- ld b, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld b, (iy+$01)
+    ", [0xfd, 0x46, 0x01]);
+
+    assert(state.B == 0x07);
+
+    //--------------------------------- ld c, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld c, (iy+$01)
+    ", [0xfd, 0x4e, 0x01]);
+
+    assert(state.C == 0x07);
+
+    //--------------------------------- ld d, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld d, (iy+$01)
+    ", [0xfd, 0x56, 0x01]);
+
+    assert(state.D == 0x07);
+
+    //--------------------------------- ld e, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld e, (iy+$01)
+    ", [0xfd, 0x5e, 0x01]);
+
+    assert(state.E == 0x07);
+
+    //--------------------------------- ld h, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld h, (iy+$01)
+    ", [0xfd, 0x66, 0x01]);
+
+    assert(state.H == 0x07);
+
+    //--------------------------------- ld l, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld l, (iy+$01)
+    ", [0xfd, 0x6e, 0x01]);
+
+    assert(state.L == 0x07);
+
+    //--------------------------------- ld a, (iy+d)
+    writeBytes(0x0000, [0x00, 0x07]);
+    state.IY = 0x0000;
+    test("
+        ld a, (iy+$01)
+    ", [0xfd, 0x7e, 0x01]);
+
+    assert(state.A == 0x07);
+
+    //--------------------------------- ld (iy+d), a
+    state.A = 0x11;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), a
+    ", [0xfd, 0x77, 0x02]);
+
+    assert(bus.read(0x0002) == 0x11);
+    //--------------------------------- ld (iy+d), b
+    state.B = 0x12;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), b
+    ", [0xfd, 0x70, 0x02]);
+
+    assert(bus.read(0x0002) == 0x12);
+    //--------------------------------- ld (iy+d), c
+    state.C = 0x13;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), c
+    ", [0xfd, 0x71, 0x02]);
+
+    assert(bus.read(0x0002) == 0x13);
+    //--------------------------------- ld (iy+d), d
+    state.D = 0x14;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), d
+    ", [0xfd, 0x72, 0x02]);
+
+    assert(bus.read(0x0002) == 0x14);
+    //--------------------------------- ld (iy+d), e
+    state.E = 0x15;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), e
+    ", [0xfd, 0x73, 0x02]);
+
+    assert(bus.read(0x0002) == 0x15);
+    //--------------------------------- ld (iy+d), h
+    state.H = 0x16;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), h
+    ", [0xfd, 0x74, 0x02]);
+
+    assert(bus.read(0x0002) == 0x16);
+    //--------------------------------- ld (iy+d), l
+    state.L = 0x17;
+    state.IY = 0x0000;
+    test("
+        ld (iy+$02), l
+    ", [0xfd, 0x75, 0x02]);
+
+    assert(bus.read(0x0002) == 0x17);
+    //--------------------------------- ld a, (iy+d)
+    writeBytes(0x0000, [0, 0, 0, 0x33]);
+    state.IY = 0x0000;
+    test("
+        ld a, (iy+$03)
+    ", [0xfd, 0x7e, 0x03]);
+
+    assert(bus.read(0x0003) == 0x33);
 }
 void ld_r() {
     cpu.reset();
@@ -616,7 +823,24 @@ void ld_rr_nn() {
     assert(state.HL == 0x0201);
     assert(state.IX == 0x0403);
     assertFlagsClear(allFlags());
+}
+void ld_rr_rr() {
+    cpu.reset();
+    state.F = 0;
 
+    state.HL = 0x1234;
+    test("
+        ld sp, hl
+    ", [0xf9]);
+
+    assert(state.SP == 0x1234);
+
+    state.IX = 0x1234;
+    test("
+        ld sp, ix
+    ", [0xdd, 0xf9]);
+
+    assert(state.SP == 0x1234);
 }
 
 setup();
@@ -630,5 +854,6 @@ ld_rr_nn_ED();
 ld_nn_rr_ED();
 ld_nn_rr();
 ld_rr_nn();
+ld_rr_rr();
 
 } //unittest

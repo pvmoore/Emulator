@@ -1247,7 +1247,7 @@ final class EX_SP_HL : Strategy {
         // 19 clocks
 
         ushort temp = s.getReg16(op.indexReg);
-        s.HL = cpu.readWord(s.SP);
+        s.setReg16(op.indexReg, cpu.readWord(s.SP));
         cpu.writeWord(s.SP, temp);
     }
 }

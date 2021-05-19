@@ -1,29 +1,19 @@
-module emulator.chips.z80.instr.instructions_fd;
+module emulator.chips.z80.instr.instructions_ddcb;
 
 import emulator.chips.z80.all;
 
-/**
- *  Like the primary opcode table but hl is iy and (hl) is (iy + n)
- *
- *  Note on undocumented instructions:
- *      - L is replaced with iyl
- *      - H is replaced with iyh
- */
-
-__gshared const {
-
-private enum {
-    A = "a", B = "b", C = "c", D = "d", E = "e", H = "h", L = "l", R = "r", I = "i",
-    BC = "bc", DE = "de", HL = "hl", SP = "sp", IY = "iy",
-    LBR = "(", RBR = ")", _ = ",", N = "%02x", NN = "%04x", PLUS = "+",
-
-    ADD = "add", ADC = "adc", INC = "inc", DEC = "dec", SUB = "sub", SBC = "sbc",
-    AND = "and", OR = "or", XOR = "xor", CP = "cp",
-    IN = "in", OUT = "out", LD = "ld", IM = "im", PUSH = "push", POP = "pop",
-    JP = "jp"
+private{
+    enum {
+        A = "a", B = "b", C = "c", D = "d", E = "e", H = "h", L = "l", IX = "ix",
+        RLC = "rlc", RRC = "rrc", RL = "rl", RR = "rr", SLA = "sla", SRA = "sra",
+        SRL = "srl", BIT = "bit", RES = "res", SET = "set",
+        LBR = "(", RBR = ")", _ = ",",
+        PLUS = "+", N = "%02x"
+    }
 }
 
-Instruction[256] groupFD = [
+__gshared const {
+Instruction[256] groupDDCB = [
 // row 0
     Instruction(0x00),
     Instruction(0x01),
@@ -31,15 +21,15 @@ Instruction[256] groupFD = [
     Instruction(0x03),
     Instruction(0x04),
     Instruction(0x05),
-    Instruction(0x06),
+    Instruction(0x06, _rlcr, [RLC, LBR, IX, PLUS, N, RBR]),
     Instruction(0x07),
     Instruction(0x08),
-    Instruction(0x09, _addhlss, [ADD, IY, _, BC]),
+    Instruction(0x09),
     Instruction(0x0a),
     Instruction(0x0b),
     Instruction(0x0c),
     Instruction(0x0d),
-    Instruction(0x0e),
+    Instruction(0x0e, _rrcr, [RRC, LBR, IX, PLUS, N, RBR]),
     Instruction(0x0f),
 // row 1
     Instruction(0x10),
@@ -48,49 +38,49 @@ Instruction[256] groupFD = [
     Instruction(0x13),
     Instruction(0x14),
     Instruction(0x15),
-    Instruction(0x16),
+    Instruction(0x16, _rlr, [RL, LBR, IX, PLUS, N, RBR]),
     Instruction(0x17),
     Instruction(0x18),
-    Instruction(0x19, _addhlss, [ADD, IY, _, DE]),
+    Instruction(0x19),
     Instruction(0x1a),
     Instruction(0x1b),
     Instruction(0x1c),
     Instruction(0x1d),
-    Instruction(0x1e),
+    Instruction(0x1e, _rrr, [RR, LBR, IX, PLUS, N, RBR]),
     Instruction(0x1f),
 // row 2
     Instruction(0x20),
-    Instruction(0x21, _ldddnn,   [LD, IY, _, NN]),
-    Instruction(0x22, _ldnnhl,   [LD, LBR, NN, RBR, _, IY]),
-    Instruction(0x23, _incss,    [INC, IY]),
+    Instruction(0x21),
+    Instruction(0x22),
+    Instruction(0x23),
     Instruction(0x24),
     Instruction(0x25),
-    Instruction(0x26),
+    Instruction(0x26, _slar, [SLA, LBR, IX, PLUS, N, RBR]),
     Instruction(0x27),
     Instruction(0x28),
-    Instruction(0x29, _addhlss, [ADD, IY, _, IY]),
-    Instruction(0x2a, _ldhlnn,  [LD, IY, _, LBR, NN, RBR]),
-    Instruction(0x2b, _decss,   [DEC, IY]),
+    Instruction(0x29),
+    Instruction(0x2a),
+    Instruction(0x2b),
     Instruction(0x2c),
     Instruction(0x2d),
-    Instruction(0x2e),
+    Instruction(0x2e, _srar, [SRA, LBR, IX, PLUS, N, RBR]),
     Instruction(0x2f),
 // row 3
-    Instruction(0x30),
-    Instruction(0x31),
-    Instruction(0x32),
-    Instruction(0x33),
-    Instruction(0x34, _incr,     [INC, LBR, IY, PLUS, N, RBR]), // inc (ix+d)
-    Instruction(0x35, _decr,     [DEC, LBR, IY, PLUS, N, RBR]), // dec (ix+d)
-    Instruction(0x36, _ldrn,     [LD, LBR, IY, PLUS, N, RBR, _, N]),
-    Instruction(0x37),
+    Instruction(0x30), // nothing here ? sll
+    Instruction(0x31), // nothing here ? sll
+    Instruction(0x32), // nothing here ? sll
+    Instruction(0x33), // nothing here ? sll
+    Instruction(0x34), // nothing here ? sll
+    Instruction(0x35), // nothing here ? sll
+    Instruction(0x36), // nothing here ? sll
+    Instruction(0x37), // nothing here ? sll
     Instruction(0x38),
-    Instruction(0x39, _addhlss, [ADD, IY, _, SP]),
+    Instruction(0x39),
     Instruction(0x3a),
     Instruction(0x3b),
     Instruction(0x3c),
     Instruction(0x3d),
-    Instruction(0x3e),
+    Instruction(0x3e, _srlr, [SRL, LBR, IX, PLUS, N, RBR]),
     Instruction(0x3f),
 // row 4
     Instruction(0x40),
@@ -99,7 +89,7 @@ Instruction[256] groupFD = [
     Instruction(0x43),
     Instruction(0x44),
     Instruction(0x45),
-    Instruction(0x46, _ldrr,     [LD, B, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x46, _bitr, [BIT, "0", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x47),
     Instruction(0x48),
     Instruction(0x49),
@@ -107,7 +97,7 @@ Instruction[256] groupFD = [
     Instruction(0x4b),
     Instruction(0x4c),
     Instruction(0x4d),
-    Instruction(0x4e, _ldrr,     [LD, C, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x4e, _bitr, [BIT, "1", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x4f),
 // row 5
     Instruction(0x50),
@@ -116,7 +106,7 @@ Instruction[256] groupFD = [
     Instruction(0x53),
     Instruction(0x54),
     Instruction(0x55),
-    Instruction(0x56, _ldrr,     [LD, D, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x56, _bitr, [BIT, "2", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x57),
     Instruction(0x58),
     Instruction(0x59),
@@ -124,7 +114,7 @@ Instruction[256] groupFD = [
     Instruction(0x5b),
     Instruction(0x5c),
     Instruction(0x5d),
-    Instruction(0x5e, _ldrr,     [LD, E, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x5e, _bitr, [BIT, "3", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x5f),
 // row 6
     Instruction(0x60),
@@ -133,7 +123,7 @@ Instruction[256] groupFD = [
     Instruction(0x63),
     Instruction(0x64),
     Instruction(0x65),
-    Instruction(0x66, _ldrr,     [LD, H, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x66, _bitr, [BIT, "4", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x67),
     Instruction(0x68),
     Instruction(0x69),
@@ -141,24 +131,24 @@ Instruction[256] groupFD = [
     Instruction(0x6b),
     Instruction(0x6c),
     Instruction(0x6d),
-    Instruction(0x6e, _ldrr,     [LD, L, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x6e, _bitr, [BIT, "5", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x6f),
 // row 7
-    Instruction(0x70, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, B]),
-    Instruction(0x71, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, C]),
-    Instruction(0x72, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, D]),
-    Instruction(0x73, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, E]),
-    Instruction(0x74, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, H]),
-    Instruction(0x75, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, L]),
-    Instruction(0x76),
-    Instruction(0x77, _ldrr,     [LD, LBR, IY, PLUS, N, RBR, _, A]),
+    Instruction(0x70),
+    Instruction(0x71),
+    Instruction(0x72),
+    Instruction(0x73),
+    Instruction(0x74),
+    Instruction(0x75),
+    Instruction(0x76, _bitr, [BIT, "6", _, LBR, IX, PLUS, N, RBR]),
+    Instruction(0x77),
     Instruction(0x78),
     Instruction(0x79),
     Instruction(0x7a),
     Instruction(0x7b),
     Instruction(0x7c),
     Instruction(0x7d),
-    Instruction(0x7e, _ldrr,     [LD, A, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x7e, _bitr, [BIT, "7", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x7f),
 // row 8
     Instruction(0x80),
@@ -167,7 +157,7 @@ Instruction[256] groupFD = [
     Instruction(0x83),
     Instruction(0x84),
     Instruction(0x85),
-    Instruction(0x86, _algar,    [ADD, A, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x86, _resr, [RES, "0", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x87),
     Instruction(0x88),
     Instruction(0x89),
@@ -175,7 +165,7 @@ Instruction[256] groupFD = [
     Instruction(0x8b),
     Instruction(0x8c),
     Instruction(0x8d),
-    Instruction(0x8e, _algar,    [ADC, A, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x8e, _resr, [RES, "1", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x8f),
 // row 9
     Instruction(0x90),
@@ -184,7 +174,7 @@ Instruction[256] groupFD = [
     Instruction(0x93),
     Instruction(0x94),
     Instruction(0x95),
-    Instruction(0x96, _algar,    [SUB, A, _, LBR, IY, PLUS, N, RBR], [SUB, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x96, _resr, [RES, "2", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x97),
     Instruction(0x98),
     Instruction(0x99),
@@ -192,7 +182,7 @@ Instruction[256] groupFD = [
     Instruction(0x9b),
     Instruction(0x9c),
     Instruction(0x9d),
-    Instruction(0x9e, _algar,    [SBC, A, _, LBR, IY, PLUS, N, RBR], [SBC, A, _, LBR, IY, PLUS, N, RBR]),
+    Instruction(0x9e, _resr, [RES, "3", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0x9f),
 // row a
     Instruction(0xa0),
@@ -201,7 +191,7 @@ Instruction[256] groupFD = [
     Instruction(0xa3),
     Instruction(0xa4),
     Instruction(0xa5),
-    Instruction(0xa6, _algar,    [AND, A, _, LBR, IY, PLUS, N, RBR], [AND, LBR, IY, PLUS, N, RBR]),
+    Instruction(0xa6, _resr, [RES, "4", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xa7),
     Instruction(0xa8),
     Instruction(0xa9),
@@ -209,7 +199,7 @@ Instruction[256] groupFD = [
     Instruction(0xab),
     Instruction(0xac),
     Instruction(0xad),
-    Instruction(0xae, _algar,    [XOR, A, _, LBR, IY, PLUS, N, RBR], [XOR, LBR, IY, PLUS, N, RBR]),
+    Instruction(0xae, _resr, [RES, "5", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xaf),
 // row b
     Instruction(0xb0),
@@ -218,7 +208,7 @@ Instruction[256] groupFD = [
     Instruction(0xb3),
     Instruction(0xb4),
     Instruction(0xb5),
-    Instruction(0xb6, _algar,    [OR, A, _, LBR, IY, PLUS, N, RBR], [OR, LBR, IY, PLUS, N, RBR]),
+    Instruction(0xb6, _resr, [RES, "6", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xb7),
     Instruction(0xb8),
     Instruction(0xb9),
@@ -226,7 +216,7 @@ Instruction[256] groupFD = [
     Instruction(0xbb),
     Instruction(0xbc),
     Instruction(0xbd),
-    Instruction(0xbe, _algar,    [CP, A, _, LBR, IY, PLUS, N, RBR], [CP, LBR, IY, PLUS, N, RBR]),
+    Instruction(0xbe, _resr, [RES, "7", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xbf),
 // row c
     Instruction(0xc0),
@@ -235,7 +225,7 @@ Instruction[256] groupFD = [
     Instruction(0xc3),
     Instruction(0xc4),
     Instruction(0xc5),
-    Instruction(0xc6),
+    Instruction(0xc6, _setr, [SET, "0", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xc7),
     Instruction(0xc8),
     Instruction(0xc9),
@@ -243,7 +233,7 @@ Instruction[256] groupFD = [
     Instruction(0xcb),
     Instruction(0xcc),
     Instruction(0xcd),
-    Instruction(0xce),
+    Instruction(0xce, _setr, [SET, "1", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xcf),
 // row d
     Instruction(0xd0),
@@ -252,7 +242,7 @@ Instruction[256] groupFD = [
     Instruction(0xd3),
     Instruction(0xd4),
     Instruction(0xd5),
-    Instruction(0xd6),
+    Instruction(0xd6, _setr, [SET, "2", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xd7),
     Instruction(0xd8),
     Instruction(0xd9),
@@ -260,24 +250,24 @@ Instruction[256] groupFD = [
     Instruction(0xdb),
     Instruction(0xdc),
     Instruction(0xdd),
-    Instruction(0xde),
+    Instruction(0xde, _setr, [SET, "3", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xdf),
 // row e
     Instruction(0xe0),
-    Instruction(0xe1, _popqq,     [POP, IY]),
+    Instruction(0xe1),
     Instruction(0xe2),
-    Instruction(0xe3, _exsphl,    ["ex", LBR, SP, RBR, _, IY]),
+    Instruction(0xe3),
     Instruction(0xe4),
-    Instruction(0xe5, _pushqq,    [PUSH, IY]),
-    Instruction(0xe6),
+    Instruction(0xe5),
+    Instruction(0xe6, _setr, [SET, "4", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xe7),
     Instruction(0xe8),
-    Instruction(0xe9, _jphl,      [JP, LBR, IY, RBR]),
+    Instruction(0xe9),
     Instruction(0xea),
     Instruction(0xeb),
     Instruction(0xec),
     Instruction(0xed),
-    Instruction(0xee),
+    Instruction(0xee, _setr, [SET, "5", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xef),
 // row f
     Instruction(0xf0),
@@ -286,15 +276,16 @@ Instruction[256] groupFD = [
     Instruction(0xf3),
     Instruction(0xf4),
     Instruction(0xf5),
-    Instruction(0xf6),
+    Instruction(0xf6, _setr, [SET, "6", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xf7),
     Instruction(0xf8),
-    Instruction(0xf9, _ldsphl,    [LD, SP, _, IY]),
+    Instruction(0xf9),
     Instruction(0xfa),
     Instruction(0xfb),
     Instruction(0xfc),
     Instruction(0xfd),
-    Instruction(0xfe),
+    Instruction(0xfe, _setr, [SET, "7", _, LBR, IX, PLUS, N, RBR]),
     Instruction(0xff),
 ];
-}
+
+} // __gshared const

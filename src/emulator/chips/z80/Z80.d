@@ -51,7 +51,8 @@ public:
             _fetch();
             op.indexReg = Reg.IX;
             if(op.code == 0xcb) {
-                _decodeCB();
+                _fetch();
+                instruction = &groupDDCB[op.code];
             } else {
                 instruction = &groupDD[op.code];
                 if(!instruction) {
@@ -63,7 +64,8 @@ public:
             _fetch();
             op.indexReg = Reg.IY;
             if(op.code == 0xcb) {
-                _decodeCB();
+                _fetch();
+                instruction = &groupFDCB[op.code];
             } else {
                 instruction = &groupFD[op.code];
                 if(!instruction) {

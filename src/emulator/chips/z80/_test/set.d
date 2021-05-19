@@ -46,6 +46,33 @@ void set() {
 
         assert(bus.read(0x0001) == expected);
         assertFlagsClear(allFlags());
+
+
+        state.IX = 0x0000;
+        test("\tset %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assert(bus.read(0x0000) == 0xff);
+        assertFlagsClear(allFlags());
+
+        state.IX = 0x0001;
+        test("\tset %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assert(bus.read(0x0001) == expected);
+        assertFlagsClear(allFlags());
+
+
+        state.IY = 0x0000;
+        test("\tset %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assert(bus.read(0x0000) == 0xff);
+        assertFlagsClear(allFlags());
+
+        state.IY = 0x0001;
+        test("\tset %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assert(bus.read(0x0001) == expected);
+        assertFlagsClear(allFlags());
+
     }
 }
 

@@ -55,6 +55,33 @@ void bit() {
 
         assertFlagsSet(H, Z);
         assertFlagsClear(N);
+
+
+        state.IX = 0x0000;
+        test("\tbit %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assertFlagsSet(H);
+        assertFlagsClear(N, Z);
+
+        state.IX = 0x0001;
+        test("\tbit %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assertFlagsSet(H, Z);
+        assertFlagsClear(N);
+
+
+        state.IY = 0x0000;
+        test("\tbit %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assertFlagsSet(H);
+        assertFlagsClear(N, Z);
+
+        state.IY = 0x0001;
+        test("\tbit %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+
+        assertFlagsSet(H, Z);
+        assertFlagsClear(N);
+
     }
 }
 
