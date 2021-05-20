@@ -30,6 +30,9 @@ bool isEven(ubyte value) {
 bool isDigit(char c) {
     return c>='0' && c<='9';
 }
+bool isQuote(char c) {
+    return c=='\'' || c=='"';
+}
 
 string toHexStringArray(ubyte[] bytes) {
     string s;

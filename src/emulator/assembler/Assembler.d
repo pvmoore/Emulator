@@ -16,9 +16,10 @@ final class Assembler {
 
         this.dataDirectives = new Set!string;
         dataDirectives.add([
-            "defb", "defw", "db", "dw", ".db", ".dw", ".byte", ".word",
-            "defm", "dm", ".dm", ".text", ".ascii", ".asciiz",
-            "defs", "ds", ".ds", ".block", "blkb", "data"
+            "db", ".db", "defb", ".byte",
+            "dw", ".dw", "defw", ".word",
+            "defm", "dm", ".dm", ".text", ".ascii", ".asciz",
+            "defs", "ds", ".ds", ".block", ".blkb"
         ]);
         this.encoding = new Encoder.Encoding();
     }
@@ -62,6 +63,12 @@ final class Assembler {
     Line getLine(uint pc) {
         return addressToLine.get(pc, Line(0));
     }
+    uint getConstantValue(string key) {
+        return absExprParser.getReference(key);
+    }
+    uint getLabelAddress(string label) {
+        return labelToAddress[label];
+    }
 private:
     void log(A...)(string fmt, A args) {
         if(false)
@@ -73,6 +80,8 @@ private:
     Lexer lexer;
     Encoder encoder;
     Token[] tokens;
+    ExpressionParser!uint absExprParser;
+    ExpressionParser!uint relExprParser;
 
     static struct Fixup {
         uint address;
@@ -110,12 +119,11 @@ private:
 
             auto line = getLineAtAddress(pc);
 
-            line.tokens = strings;
-
             string first  = strings[0].toLower();
             string second = strings.length > 1 ? strings[1].toLower() : "";
 
             if(dataDirectives.contains(first)) {
+                data(strings, line);
                 continue;
             }
 
@@ -129,8 +137,9 @@ private:
 
             if(strings.length > 2) {
                 // equ
-                if(second.isOneOf("equ", ".equ", ".loc")) {
+                if(second.isOneOf("equ", ".equ")) {
                     auto key = strings[0];
+                    if(key.endsWith(":")) key = key[0..$-1];
                     constants[key] = convertNumbersToInt(strings[2..$]);
                     continue;
                 }
@@ -139,7 +148,7 @@ private:
             // org
             if(strings.length > 1) {
                 if(first.isOneOf("org", ".org", ".loc")) {
-                    pc = convertToInt(convertToHex(strings[1]));
+                    pc = convertToInt(strings[1]);
                     log("pc = %s", pc);
                     continue;
                 }
@@ -153,11 +162,14 @@ private:
                 labelToAddress[label] = pc;
 
                 if(length==1) return false;
-                if(dataDirectives.contains(second)) return false;
 
                 // Remove the label token
                 strings = strings[1..$];
-                line.tokens = strings;
+
+                if(dataDirectives.contains(second)) {
+                    data(strings, line);
+                    return false;
+                }
 
                 return true;
             }
@@ -166,7 +178,7 @@ private:
             }
 
             // if we get here then this is an opcode
-
+            line.tokens = strings;
             string[] lower = strings.map!(it=>it.toLower()).array;
 
             encoding.reset();
@@ -199,8 +211,9 @@ private:
      * Implement Fixups.
      */
     void pass2() {
-        auto absExprParser = new ExpressionParser!int;
-        auto relExprParser = new ExpressionParser!int;
+        this.absExprParser = new ExpressionParser!uint;
+        this.relExprParser = new ExpressionParser!uint;
+
         foreach(k,v; constants) {
             absExprParser.addReference(k, v);
             relExprParser.addReference(k, v);
@@ -256,42 +269,153 @@ private:
         log("  %s", strings);
         return tuple(strings, startsOnMargin);
     }
+    void data(string[] strings, Line* line) {
+        switch(strings[0].toLower()) {
+            case "db":
+            case ".db":
+            case "defb":
+            case ".byte":
+                dataByte(strings[1..$], line);
+                break;
+            case "dw":
+            case ".dw":
+            case "defw":
+            case ".word":
+                dataWord(strings[1..$], line);
+                break;
+            case "ds":
+            case "defs":
+            case ".block":
+            case ".blkb":
+                dataStorage(strings[1..$], line);
+                break;
+            case "defm":
+            case "dm":
+            case ".dm":
+            case ".text":
+            case ".ascii":
+                dataString(strings[1..$], line);
+                break;
+            case ".asciz":
+                dataString(strings[1..$], line, true);
+                break;
+            default:
+                throw new Exception("Unhandled data type: %s".format(strings[0]));
+        }
+        pc += line.code.length.as!int;
+    }
+    void dataByte(string[] strings, Line* line) {
+        while(strings.length > 0) {
+            db(strings, line);
+        }
+    }
+    void dataWord(string[] strings, Line* line) {
+        while(strings.length > 0) {
+            auto end = strings.indexOf(",");
+            int bump = 0;
+            if(end==-1) {
+                end = strings.length.as!int;
+            } else {
+                bump = 1;
+            }
 
-    /**
-     *  Convert an ascii string def to an array of bytes
-     */
-    ubyte[] convertStringToBytes(string s) {
-        return null;
-    }
-    /**
-     * Also remove $ and & characters
-     */
-    string convertToHex(string dec) {
-        if(dec[0]=='$' || dec[0]=='&') {
-            return dec[1..$].toLower();
+            if(end == 1 && strings[0].isNumber()) {
+                ushort value = convertToInt(strings[0]).as!ushort;
+                line.code ~= (value & 0xff).as!ubyte;
+                line.code ~= (value>>>8).as!ubyte;
+            } else {
+                auto f = Fixup(
+                    line.address,
+                    2,
+                    line.code.length.as!int,
+                    false,
+                    strings[0..end].dup
+                );
+                fixups ~= f;
+                line.code ~= 0;
+                line.code ~= 0;
+            }
+            strings = strings[end+bump..$];
         }
-        if(dec.length>2 && dec[0]=='0' && dec[1]=='x') {
-            return dec[2..$].toLower();
+    }
+    /** count [, fillByte ] */
+    void dataStorage(string[] strings, Line* line) {
+        uint count = convertToInt(strings[0]);
+        ubyte fill = 0x00;
+        if(strings.length > 1) {
+            if(strings.length==3 && strings[2].isNumber()) {
+                fill = convertToInt(strings[2]).as!ubyte;
+            } else {
+                todo("Handle expression fill byte");
+            }
         }
-        import std.conv;
-        return to!string(to!uint(dec), 16);
+        foreach(i; 0..count) {
+            line.code ~= fill;
+        }
     }
-    int convertToInt(string hex) {
-        import std.conv;
-        return to!uint(hex, 16);
+    /**
+     * dm 'text'
+     * dm "text", 5, 'hello' + $80
+     */
+    void dataString(string[] strings, Line* line, bool zSuffix = false) {
+
+        expandStringsToNumbers(strings);
+
+        if(zSuffix) {
+            strings ~= [",", "0"];
+        }
+        dataByte(strings, line);
     }
-    string convertToIntValue(string hex) {
-        import std.conv;
-        return to!string(to!uint(hex, 16));
+    /**
+     * Parse a single byte data element which can be a literal number
+     * or an expression.
+     */
+    void db(ref string[] strings, Line* line) {
+        auto end = strings.indexOf(",");
+        int bump = 0;
+        if(end==-1) {
+            end = strings.length.as!int;
+        } else {
+            bump = 1;
+        }
+
+        if(end==1 && strings[0].isNumber()) {
+            line.code ~= convertToInt(strings[0]).as!ubyte;
+        } else {
+            auto f = Fixup(
+                line.address,
+                1,
+                line.code.length.as!int,
+                false,
+                strings[0..end].dup
+            );
+            fixups ~= f;
+            line.code ~= 0;
+        }
+        strings = strings[end+bump..$];
     }
-    bool isNumber(string value) {
-        if(value[0]=='$' || value[0]=='&') return true;
-        if(value.length>2 && value[0]=='0' && value[1]=='x') return true;
-        if(value[0]=='-') value = value[1..$];
-        return value[0]>='0' && value[0]<='9';
-    }
-    string[] convertNumbersToInt(string[] tokens) {
-        return tokens.map!(it=>isNumber(it) ? convertToIntValue(convertToHex(it)) : it).array;
+    /**
+     * Convert an ascii string def to an array of numbers eg.
+     * ["'abc'" + $80] -> ["97", "98", "99"]
+     */
+    void expandStringsToNumbers(ref string[] strings) {
+        import std.conv : to;
+        string[] temp;
+        foreach(s; strings) {
+            if(s[0].isQuote()) {
+                foreach(ch; s[1..$-1]) {
+                    if(ch=='\\') {
+                        // Ignore back slashes
+                    } else {
+                        if(temp.length > 0 && temp[$-1]!=",") temp ~= ",";
+                        temp ~= to!int(ch).to!string;
+                    }
+                }
+            } else {
+                temp ~= s;
+            }
+        }
+        strings = temp;
     }
     Line[] getLinesInOrder() {
         import std;

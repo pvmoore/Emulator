@@ -27,17 +27,17 @@ struct Instruction {
 struct Op {
     ubyte code;
 
-    Reg indexReg = Reg.HL; // HL, IX, IY
+    Reg addressReg = Reg.HL; // HL, IX, IY
 
 }
 byte getDisplacement(Z80 cpu, Op op) {
-    if(op.indexReg == Reg.HL) return 0;
+    if(op.addressReg == Reg.HL) return 0;
     ubyte d = cpu.fetchByte();
     return d;
 }
 // HL ; IX+d ; IY+d
 ushort getHLIXdIYd(Z80 cpu, Op op) {
-    return (cpu.state.getReg16(op.indexReg) + getDisplacement(cpu, op)).as!ushort;
+    return (cpu.state.getReg16(op.addressReg) + getDisplacement(cpu, op)).as!ushort;
 }
 private {
     enum : string {

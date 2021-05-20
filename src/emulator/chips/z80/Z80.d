@@ -49,7 +49,7 @@ public:
         }
         void _decodeDD() {
             _fetch();
-            op.indexReg = Reg.IX;
+            op.addressReg = Reg.IX;
             if(op.code == 0xcb) {
                 _fetch();
                 instruction = &groupDDCB[op.code];
@@ -62,7 +62,7 @@ public:
         }
         void _decodeFD() {
             _fetch();
-            op.indexReg = Reg.IY;
+            op.addressReg = Reg.IY;
             if(op.code == 0xcb) {
                 _fetch();
                 instruction = &groupFDCB[op.code];

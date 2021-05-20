@@ -21,4 +21,5 @@ import emulator.assembler.Decoder;
 import emulator.assembler.Encoder;
 import emulator.assembler.Line;
 import emulator.assembler.Lexer;
+import emulator.assembler.Number;
 import emulator.assembler.Token;

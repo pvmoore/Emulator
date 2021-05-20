@@ -397,7 +397,7 @@ final class LD_dd_nn : Strategy {
         switch(bits) {
             case 0: s.BC = value; break;
             case 1: s.DE = value; break;
-            case 2: s.setReg16(op.indexReg, value); break;
+            case 2: s.setReg16(op.addressReg, value); break;
             case 3: s.SP = value; break;
             default: break;
         }
@@ -437,7 +437,7 @@ final class LD_SP_HL : Strategy {
         auto s = cpu.state;
 
         // 6 clocks
-        s.SP = s.getReg16(op.indexReg);
+        s.SP = s.getReg16(op.addressReg);
     }
 }
 final class LD_nn_REG : Strategy {
@@ -455,7 +455,7 @@ final class LD_nn_REG : Strategy {
             cpu.writeByte(addr, s.getReg8(reg));
         } else {
             // HL, IX, IY
-            auto r = reg==Reg.HL ? op.indexReg : reg;
+            auto r = reg==Reg.HL ? op.addressReg : reg;
 
             cpu.writeWord(addr, s.getReg16(r));
         }
@@ -483,7 +483,7 @@ final class LD_REG_nn : Strategy {
             s.setReg8(reg, cpu.readByte(addr));
         } else {
             // HL, IX, IY
-            auto r = reg==Reg.HL ? op.indexReg : reg;
+            auto r = reg==Reg.HL ? op.addressReg : reg;
 
             s.setReg16(r, cpu.readWord(addr));
         }
@@ -586,8 +586,8 @@ final class INCss : Strategy {
             case 0: s.BC++; break;
             case 1: s.DE++; break;
             case 2:
-                ushort old = s.getReg16(op.indexReg);
-                s.setReg16(op.indexReg, (old+1).as!ushort);
+                ushort old = s.getReg16(op.addressReg);
+                s.setReg16(op.addressReg, (old+1).as!ushort);
                 break;
             case 3: s.SP++; break;
             default: break;
@@ -611,8 +611,8 @@ final class DECss : Strategy {
             case 0: s.BC--; break;
             case 1: s.DE--; break;
             case 2:
-                ushort old = s.getReg16(op.indexReg);
-                s.setReg16(op.indexReg, (old-1).as!ushort);
+                ushort old = s.getReg16(op.addressReg);
+                s.setReg16(op.addressReg, (old-1).as!ushort);
                 break;
             case 3: s.SP--; break;
             default: break;
@@ -708,7 +708,7 @@ final class ADD_HLss : Strategy {
     override void execute(Z80 cpu, Op op) const {
         auto s    = cpu.state;
         auto bits = (op.code >>> 4) &  3;
-        auto reg  = op.indexReg;
+        auto reg  = op.addressReg;
         ushort left = s.getReg16(reg);
         ushort right;
 
@@ -1050,7 +1050,7 @@ final class JP_HL : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto addr = cpu.readWord(s.getReg16(op.indexReg));
+        auto addr = cpu.readWord(s.getReg16(op.addressReg));
 
         // 4 clocks (hl)
         // 8 clocks (ix) or (iy)
@@ -1246,8 +1246,8 @@ final class EX_SP_HL : Strategy {
 
         // 19 clocks
 
-        ushort temp = s.getReg16(op.indexReg);
-        s.setReg16(op.indexReg, cpu.readWord(s.SP));
+        ushort temp = s.getReg16(op.addressReg);
+        s.setReg16(op.addressReg, cpu.readWord(s.SP));
         cpu.writeWord(s.SP, temp);
     }
 }
@@ -1298,7 +1298,7 @@ final class PUSHqq : Strategy {
         switch(qq) {
             case 0: value = s.BC; break;
             case 1: value = s.DE; break;
-            case 2: value = s.getReg16(op.indexReg); break;
+            case 2: value = s.getReg16(op.addressReg); break;
             default: value = s.AF; break;
         }
         cpu.pushWord(value);
@@ -1324,7 +1324,7 @@ final class POPqq : Strategy {
             case 0: s.BC = value; break;
             case 1: s.DE = value; break;
             case 2:
-                s.setReg16(op.indexReg, value);
+                s.setReg16(op.addressReg, value);
                 break;
             default: s.AF = value; break;
         }

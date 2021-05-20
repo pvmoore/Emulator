@@ -36,6 +36,7 @@ public:
                 //     addToken(Kind.COLON);
                 //     break;
                 case '"':
+                case '\'':
                     parseString();
                     break;
                 case '+':
@@ -78,20 +79,22 @@ public:
     }
 private:
     char peek(int offset=0) {
-        if(pos>=text.length) return 0;
+        if(pos+offset>=text.length) return 0;
         return text[pos+offset];
     }
     void parseString() {
         addToken();
+        auto q = peek();
         pos++;
         while(pos<text.length) {
-            if(peek()=='"') {
-                pos++;
-                if(peek()!='\\' || peek(1)!='"') {
+            if(peek()==q) {
+                if(peek(-1)!='\\') {
+                    pos++;
                     addToken();
                     break;
                 }
             }
+            pos++;
         }
     }
     void parseLComment() {
