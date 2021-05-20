@@ -1,4 +1,4 @@
-module emulator.assembler._tests;
+module emulator.assembler._AssemblerTest;
 
 import emulator.assembler.all;
 import emulator.chips.z80.all;
@@ -35,7 +35,7 @@ void assemble1() {
 
     assert(lines[1].address == 0x0001);
     assert(lines[1].code == [0x3e, 0x01]);
-    assert(lines[1].tokens == ["ld", "a", ",", "$01"]);
+    assert(lines[1].tokens == ["ld", "a", ",", "$01"], "%s".format(lines[1].tokens));
 
     //-------------------------------------------
 
@@ -253,6 +253,7 @@ defb 6
 }
 
 setup();
+
 assemble1();
 labels();
 immediateLiterals();

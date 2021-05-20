@@ -31,7 +31,7 @@ public:
     const(Instruction)* execute() {
         ubyte[] codes;
         const(Instruction)* instruction;
-        auto op = Op(0x00, Reg.HL);
+        auto op = Op(0x00, Reg.HL, Reg.H, Reg.L);
 
         void _fetch() {
             codes ~= (op.code = fetchByte());
@@ -49,7 +49,9 @@ public:
         }
         void _decodeDD() {
             _fetch();
-            op.addressReg = Reg.IX;
+            op.regHL = Reg.IX;
+            op.regH = Reg.IXH;
+            op.regL = Reg.IXL;
             if(op.code == 0xcb) {
                 _fetch();
                 instruction = &groupDDCB[op.code];
@@ -62,7 +64,9 @@ public:
         }
         void _decodeFD() {
             _fetch();
-            op.addressReg = Reg.IY;
+            op.regHL = Reg.IY;
+            op.regH = Reg.IYH;
+            op.regL = Reg.IYL;
             if(op.code == 0xcb) {
                 _fetch();
                 instruction = &groupFDCB[op.code];

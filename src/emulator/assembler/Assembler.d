@@ -22,12 +22,16 @@ final class Assembler {
             "defs", "ds", ".ds", ".block", ".blkb"
         ]);
         this.encoding = new Encoder.Encoding();
+        reset();
     }
     void reset() {
         constants = null;
         labelToAddress = null;
         addressToLine = null;
         fixups = null;
+
+        this.absExprParser = new ExpressionParser!uint;
+        this.relExprParser = new ExpressionParser!uint;
     }
     Line[] encode(string text) {
         log("Running assembler ...");
@@ -156,7 +160,7 @@ private:
 
             // label
             bool _handleLabel() {
-                string label = first.endsWith(":") ? first[0..$-1] : first;
+                string label = strings[0].endsWith(":") ? strings[0][0..$-1] : strings[0];
                 log("label: %s", label);
                 line.labels ~= label;
                 labelToAddress[label] = pc;
@@ -183,7 +187,7 @@ private:
 
             encoding.reset();
 
-            encoder.encode(encoding, lower);
+            encoder.encode(encoding, strings, lower);
 
             if(encoding.bytes.length==0) {
                 throw new Exception("Bad instruction on line %s".format(lineNumber+1));
@@ -211,9 +215,6 @@ private:
      * Implement Fixups.
      */
     void pass2() {
-        this.absExprParser = new ExpressionParser!uint;
-        this.relExprParser = new ExpressionParser!uint;
-
         foreach(k,v; constants) {
             absExprParser.addReference(k, v);
             relExprParser.addReference(k, v);

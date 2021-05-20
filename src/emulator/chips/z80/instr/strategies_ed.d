@@ -96,7 +96,7 @@ final class OUT_C_r : Strategy {
         // 12 clocks
 
         ubyte value = s.getReg8(reg);
-        cpu.writePort(state.C, value);
+        cpu.writePort(s.C, value);
     }
 }
 final class ADC_HL_ss : Strategy {
@@ -128,10 +128,10 @@ final class ADC_HL_ss : Strategy {
         }
 
         uint after = left + right + c;
-        state.HL = after.as!ushort;
+        s.HL = after.as!ushort;
 
-        s.flagS(state.HL >= 0x8000);
-        s.flagZ(state.HL == 0);
+        s.flagS(s.HL >= 0x8000);
+        s.flagZ(s.HL == 0);
         s.updateH16(left, right+c, after);
         s.updateV16(left, right+c, after);
         s.flagN(false);

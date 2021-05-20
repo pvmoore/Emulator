@@ -35,8 +35,14 @@ public:
                 // case ':':
                 //     addToken(Kind.COLON);
                 //     break;
-                case '"':
                 case '\'':
+                    if(peek(-2)=='a' && peek(-1)=='f') {
+                        // Z80 hack for af'
+                        pos++;
+                        break;
+                    }
+                    goto case '"';
+                case '"':
                     parseString();
                     break;
                 case '+':

@@ -37,14 +37,14 @@ final class Z80Encoder : Encoder {
         this.CC.add(["c", "nc", "z", "nz", "po", "pe", "p", "m"]);
     }
     @Implements("Encoder")
-    void encode(Encoder.Encoding enc, string[] asmTokens) {
+    void encode(Encoder.Encoding enc, string[] asmTokens, string[] asmTokensLower) {
         //writefln("encode %s", asmTokens);
 
         match.reset();
 
-        match.possibleCC = checkForCC(asmTokens[0]);
+        match.possibleCC = checkForCC(asmTokensLower[0]);
 
-        findInstruction(asmTokens);
+        findInstruction(asmTokens, asmTokensLower);
 
         if(match.instr) {
 
@@ -53,7 +53,7 @@ final class Z80Encoder : Encoder {
             }
             enc.bytes ~= match.instr.code;
 
-            handleAwkwardInstructions(enc, asmTokens);
+            handleAwkwardInstructions(enc);
 
             foreach(f; match.fixups) {
                 enc.fixups = match.fixups.dup;
@@ -107,32 +107,32 @@ private:
 
     Match match;
 
-    void findInstruction(string[] tokens) {
-        handleSpecialCases(tokens);
+    void findInstruction(string[] asmTokens, string[] asmTokensLower) {
+        handleSpecialCases(asmTokensLower);
 
-        string opcode = tokens[0];
+        string opcode = asmTokensLower[0];
 
         foreach(i, h; hashes) {
-            if(checkHash(h, opcode, tokens)) {
+            if(checkHash(h, opcode, asmTokens, asmTokensLower)) {
                 match.hashBytes = prefixes[i].dup;
                 return;
             }
         }
     }
     /** Prepare 'rst' instructions */
-    void handleSpecialCases(string[] tokens) {
+    void handleSpecialCases(string[] asmTokensLower) {
         // rst - convert decimal to hex and remove $ or &
-        if(tokens.length==2 && "rst"==tokens[0]) {
-            auto n = tokens[1];
+        if(asmTokensLower.length==2 && "rst"==asmTokensLower[0]) {
+            auto n = asmTokensLower[1];
             if(n.startsWith("$") || n.startsWith("&")) {
-                tokens[1] = tokens[1][1..$];
+                asmTokensLower[1] = asmTokensLower[1][1..$];
             } else if(!n.isOneOf("10", "18", "20", "28", "30", "38")) {
-                tokens[1] = "%02x".format(tokens[1].to!int(10));
+                asmTokensLower[1] = "%02x".format(asmTokensLower[1].to!int(10));
             }
         }
     }
     /** Fix the two awkward 0x36 cases */
-    void handleAwkwardInstructions(Encoder.Encoding enc, string[] asmTokens) {
+    void handleAwkwardInstructions(Encoder.Encoding enc) {
         if(enc.bytes.length > 1) {
             auto isDD36 = enc.bytes[0] == 0xdd && enc.bytes[1]==0x36;
             auto isFD36 = enc.bytes[0] == 0xfd && enc.bytes[1]==0x36;
@@ -160,12 +160,12 @@ private:
             }
         }
     }
-    bool checkHash(InstrPtr[][string] h, string opcode, string[] tokens) {
+    bool checkHash(InstrPtr[][string] h, string opcode, string[] asmTokens, string[] asmTokensLower) {
         auto p = opcode in h;
         if(p) {
             foreach(i; *p) {
                 //writefln("  %s %s", i.code, i.tokens);
-                if(matchesInstruction(tokens, i)) {
+                if(matchesInstruction(asmTokens, asmTokensLower, i)) {
                     match.instr = i;
                     return true;
                 }
@@ -173,29 +173,29 @@ private:
         }
         return false;
     }
-    bool matchesInstruction(string[] tokens, InstrPtr i) {
-        if(matchesTokens(tokens, i.tokens)) {
+    bool matchesInstruction(string[] asmTokens, string[] asmTokensLower, InstrPtr i) {
+        if(matchesTokens(asmTokens, asmTokensLower, i.tokens)) {
             match.isAlt = false;
             return true;
         }
-        if(matchesTokens(tokens, i.alt)) {
+        if(matchesTokens(asmTokens, asmTokensLower, i.alt)) {
             match.isAlt = true;
             return true;
         }
         return false;
     }
-    bool matchesTokens(string[] asmTokens, const(string[]) instrTokens) {
+    bool matchesTokens(string[] asmTokens, string[] asmTokensLower, const(string[]) instrTokens) {
         for(int i=0; i<asmTokens.length && i<instrTokens.length; i++) {
 
-            auto isn  = isN(asmTokens[i], instrTokens[i]);
-            auto isnn = !isn && isNN(asmTokens[i], instrTokens[i]);
+            auto isn  = isN(asmTokensLower[i], instrTokens[i]);
+            auto isnn = !isn && isNN(asmTokensLower[i], instrTokens[i]);
             Encoder.Fixup fixup;
 
             if(isn || isnn) {
                 fixup.numBytes = isn ? 1 : 2;
                 fixup.tokenIndex = i;
-                fixup.isRelative = asmTokens[0] == "jr" ||
-                                   asmTokens[0] == "djnz";
+                fixup.isRelative = asmTokensLower[0] == "jr" ||
+                                   asmTokensLower[0] == "djnz";
 
                 if(asmTokens[i]=="(") {
                     // assume this instruction has indirect memory access
@@ -203,16 +203,16 @@ private:
                     return false;
                 }
 
-                auto end = matchTokensBackwards(asmTokens, instrTokens);
+                auto end = matchTokensBackwards(asmTokens, asmTokensLower, instrTokens);
                 if(end != -1) {
-                    fixup.tokens = asmTokens[i..end+1];
+                    fixup.tokens = asmTokens[i..end+1].dup;
                     match.fixups ~= fixup;
                     return true;
                 } else {
                     return false;
                 }
 
-            } else if(asmTokens[i] != instrTokens[i]) {
+            } else if(asmTokensLower[i] != instrTokens[i]) {
                 return false;
             }
         }
@@ -221,16 +221,16 @@ private:
     /**
      * @return last offset of fixup expression or -1 if no match
      */
-    int matchTokensBackwards(string[] asmTokens, const(string[]) instrTokens) {
+    int matchTokensBackwards(string[] asmTokens, string[] asmTokensLower, const(string[]) instrTokens) {
         int a = asmTokens.length.as!int-1;
         int i = instrTokens.length.as!int-1;
 
         while(a>=0 && i>=0) {
-            if(isNN(asmTokens[a], instrTokens[i])) {
+            if(isNN(asmTokensLower[a], instrTokens[i])) {
                 return a;
-            } else if(isN(asmTokens[a], instrTokens[i])) {
+            } else if(isN(asmTokensLower[a], instrTokens[i])) {
                 return a;
-            } else if(asmTokens[a] != instrTokens[i]) {
+            } else if(asmTokensLower[a] != instrTokens[i]) {
                 break;
             }
             a--;
@@ -238,13 +238,13 @@ private:
         }
         return -1;
     }
-    bool isN(string asmToken, string instrToken) {
+    bool isN(string asmTokenLower, string instrToken) {
         if("%02x"!=instrToken) return false;
-        return !REGS.contains(asmToken) && (!match.possibleCC || !CC.contains(asmToken));
+        return !REGS.contains(asmTokenLower) && (!match.possibleCC || !CC.contains(asmTokenLower));
     }
-    bool isNN(string asmToken, string instrToken) {
+    bool isNN(string asmTokenLower, string instrToken) {
         if("%04x"!=instrToken) return false;
-        return !REGS.contains(asmToken) && (!match.possibleCC || !CC.contains(asmToken));
+        return !REGS.contains(asmTokenLower) && (!match.possibleCC || !CC.contains(asmTokenLower));
     }
     /**
      * @return true if the instruction can possibly contain a CC identifier eg. "nz"

@@ -27,17 +27,18 @@ struct Instruction {
 struct Op {
     ubyte code;
 
-    Reg addressReg = Reg.HL; // HL, IX, IY
-
+    Reg regHL = Reg.HL; // HL, IX, IY
+    Reg regH = Reg.H;   // H, IXH, IYH
+    Reg regL = Reg.L;   // L, IXL, IYL
 }
 byte getDisplacement(Z80 cpu, Op op) {
-    if(op.addressReg == Reg.HL) return 0;
+    if(op.regHL == Reg.HL) return 0;
     ubyte d = cpu.fetchByte();
     return d;
 }
 // HL ; IX+d ; IY+d
 ushort getHLIXdIYd(Z80 cpu, Op op) {
-    return (cpu.state.getReg16(op.addressReg) + getDisplacement(cpu, op)).as!ushort;
+    return (cpu.state.getReg16(op.regHL) + getDisplacement(cpu, op)).as!ushort;
 }
 private {
     enum : string {
@@ -62,7 +63,7 @@ Instruction[256] primary = [
     Instruction(0x05, _decr,      [DEC, B]),
     Instruction(0x06, _ldrn,      [LD, B, _, N]),
     Instruction(0x07, _rlca,      ["rlca"]),
-    Instruction(0x08, _exaf,      ["ex", AF, _, AF1]),
+    Instruction(0x08, _exaf,      ["ex", AF, _, AF1], ["ex", AF, _, "af'"]),
     Instruction(0x09, _addhlss,   [ADD, HL, _, BC]),
     Instruction(0x0a, _ldabc,     [LD, A, _, LBR, BC, RBR]),
     Instruction(0x0b, _decss,     [DEC, BC]),
@@ -281,7 +282,7 @@ Instruction[256] primary = [
     Instruction(0xd3, _outna,     [OUT, LBR, N, RBR, _, A]),
     Instruction(0xd4, _callccnn,  [CALL, "nc", _, NN]),
     Instruction(0xd5, _pushqq,    [PUSH, DE]),
-    Instruction(0xd6, _suban,     [SUB, A, _, N]),
+    Instruction(0xd6, _suban,     [SUB, A, _, N], [SUB, N]),
     Instruction(0xd7, _rstp,      [RST, "10"]),
     Instruction(0xd8, _retcc,     [RET, C]),
     Instruction(0xd9, _exx,       ["exx"]),
@@ -306,7 +307,7 @@ Instruction[256] primary = [
     Instruction(0xeb, _exdehl,    ["ex", DE, _, HL]),
     Instruction(0xec, _callccnn,  [CALL, "pe", _, NN]),
     Instruction(0xed),                              // ED group
-    Instruction(0xee, _xoran,     [XOR, A, _, N]),
+    Instruction(0xee, _xoran,     [XOR, A, _, N], [XOR, N]),
     Instruction(0xef, _rstp,      [RST, "28"]),
 // row f
     Instruction(0xf0, _retcc,     [RET, "p"]),
@@ -315,7 +316,7 @@ Instruction[256] primary = [
     Instruction(0xf3, _di,        ["di"]),
     Instruction(0xf4, _callccnn,  [CALL, "p", _, NN]),
     Instruction(0xf5, _pushqq,    [PUSH, AF]),
-    Instruction(0xf6, _oran,      [OR, A, _, N]),
+    Instruction(0xf6, _oran,      [OR, A, _, N], [OR, N]),
     Instruction(0xf7, _rstp,      [RST, "30"]),
     Instruction(0xf8,  _retcc,    [RET, "m"]),
     Instruction(0xf9, _ldsphl,    [LD, SP, _, HL]),
@@ -323,7 +324,7 @@ Instruction[256] primary = [
     Instruction(0xfb, _ei,        ["ei"]),
     Instruction(0xfc, _callccnn,  [CALL, "m", _, NN]),
     Instruction(0xfd),                              // FD group
-    Instruction(0xfe, _cpan,      [CP, A, _, N]),
+    Instruction(0xfe, _cpan,      [CP, A, _, N], [CP, N]),
     Instruction(0xff, _rstp,      [RST, "38"]),
 ];
 

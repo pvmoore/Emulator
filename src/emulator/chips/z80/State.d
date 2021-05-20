@@ -10,7 +10,11 @@ enum Reg {
     E,
     F,
     H,
+    IXH,
+    IYH,
     L,
+    IXL,
+    IYL,
     I,
     R,
     AF,
@@ -147,7 +151,11 @@ public:
             case E: return this.E;
             case F: return this.F;
             case H: return this.H;
+            case IXH: return (this.IX>>>8).as!ubyte;
+            case IYH: return (this.IY>>>8).as!ubyte;
             case L: return this.L;
+            case IXL: return (this.IX&0xff).as!ubyte;
+            case IYL: return (this.IY&0xff).as!ubyte;
             case I: return this.I;
             case R: return this.R;
             default: throw new Exception("Bad 8 bit reg");
@@ -162,7 +170,11 @@ public:
             case E: this.E = value; break;
             case F: this.F = value; break;
             case H: this.H = value; break;
+            case IXH: this.IX = (this.IX & 0xff) | ((value<<8) & 0xff00); break;
+            case IYH: this.IY = (this.IY & 0xff) | ((value<<8) & 0xff00); break;
             case L: this.L = value; break;
+            case IXL: this.IX = (this.IX & 0xff00) | (value & 0xff); break;
+            case IYL: this.IY = (this.IY & 0xff00) | (value & 0xff); break;
             case I: this.I = value; break;
             case R: this.R = value; break;
             default: throw new Exception("Bad 8 bit reg");

@@ -27,5 +27,5 @@ interface Encoder {
         string[] tokens;
     }
 
-    void encode(Encoding enc, string[] tokens);
+    void encode(Encoding enc, string[] tokens, string[] tokensLower);
 }

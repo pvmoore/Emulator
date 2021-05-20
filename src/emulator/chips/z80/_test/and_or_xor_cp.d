@@ -57,6 +57,7 @@ void and() {
     },
         ["and a, b",
         "and a, $ff",
+        "and $ff",
         "and a, (hl)",
         "and a, (ix+$00)",
         "and a, (iy+$00)"
@@ -75,6 +76,7 @@ void and() {
     },
         ["and a, b",
         "and a, $00",
+        "and $00",
         "and a, (hl)",
         "and a, (ix+$00)",
         "and a, (iy+$00)"
@@ -93,6 +95,7 @@ void and() {
     },
         ["and a, b",
         "and a, $01",
+        "and $01",
         "and a, (hl)",
         "and a, (ix+$00)",
         "and a, (iy+$00)"
@@ -141,6 +144,7 @@ void or() {
     },
         ["or a, b",
         "or a, $ff",
+        "or $ff",
         "or a, (hl)",
         "or a, (ix+$00)",
         "or a, (iy+$00)"
@@ -159,6 +163,7 @@ void or() {
     },
         ["or a, b",
         "or a, $00",
+        "or $00",
         "or a, (hl)",
         "or a, (ix+$00)",
         "or a, (iy+$00)"
@@ -207,6 +212,7 @@ void xor() {
     },
         ["xor a, b",
         "xor a, $ff",
+        "xor $ff",
         "xor a, (hl)",
         "xor a, (ix+$00)",
         "xor a, (iy+$00)"
@@ -225,6 +231,7 @@ void xor() {
     },
         ["xor a, b",
         "xor a, $ff",
+        "xor $ff",
         "xor a, (hl)",
         "xor a, (ix+$00)",
         "xor a, (iy+$00)"
@@ -273,6 +280,7 @@ void cp() {
     },
         ["cp a, b",
         "cp a, $ff",
+        "cp $ff",
         "cp a, (hl)",
         "cp a, (ix+$00)",
         "cp a, (iy+$00)"
@@ -291,6 +299,7 @@ void cp() {
     },
         ["cp a, b",
         "cp a, $00",
+        "cp $00",
         "cp a, (hl)",
         "cp a, (ix+$00)",
         "cp a, (iy+$00)"
@@ -309,6 +318,7 @@ void cp() {
     },
         ["cp a, b",
         "cp a, $ff",
+        "cp $ff",
         "cp a, (hl)",
         "cp a, (ix+$00)",
         "cp a, (iy+$00)"
@@ -327,6 +337,7 @@ void cp() {
     },
         ["cp a, b",
         "cp a, $81",
+        "cp $81",
         "cp a, (hl)",
         "cp a, (ix+$00)",
         "cp a, (iy+$00)"
