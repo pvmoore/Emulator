@@ -85,50 +85,6 @@ public:
         IFF2 = false;
         IM = 0;
     }
-    State clone() {
-        auto s = new State();
-        s.AF = this.AF;
-        s.BC = this.BC;
-        s.DE = this.DE;
-        s.HL = this.HL;
-        s.IX = this.IX;
-        s.IY = this.IY;
-        s.SP = this.SP;
-        s.PC = this.PC;
-        s.I  = this.I;
-        s.R  = this.R;
-        s.AF1 = this.AF1;
-        s.BC1 = this.BC1;
-        s.DE1 = this.DE1;
-        s.HL1 = this.HL1;
-        s.IFF1 = this.IFF1;
-        s.IFF2 = this.IFF2;
-        s.IM = this.IM;
-        return s;
-    }
-    override bool opEquals(const Object other) const {
-        auto s = other.as!State;
-        if(s is null) return false;
-        if(s is this) return true;
-        return
-            s.AF == this.AF &&
-            s.BC == this.BC &&
-            s.DE == this.DE &&
-            s.HL == this.HL &&
-            s.IX == this.IX &&
-            s.IY == this.IY &&
-            s.SP == this.SP &&
-            s.PC == this.PC &&
-            s.I == this.I &&
-            s.R == this.R &&
-            s.AF1 == this.AF1 &&
-            s.BC1 == this.BC1 &&
-            s.DE1 == this.DE1 &&
-            s.HL1 == this.HL1 &&
-            s.IFF1 == this.IFF1 &&
-            s.IFF2 == this.IFF2 &&
-            s.IM == this.IM;
-    }
     override string toString() {
         string flags =
             (flag(Flag.S) ? "S" : "-") ~
@@ -138,8 +94,10 @@ public:
             (flag(Flag.N) ? "N" : "-") ~
             (flag(Flag.C) ? "C" : "-");
 
-        return "[%04x] %s AF:%04x BC:%04x DE:%04x HL:%04x SP:%04x I:%02x R:%02x IFF:%b,%b IM:%s"
-            .format(PC, flags, AF, BC, DE, HL, SP, I, R, IFF1, IFF2, IM);
+        return ("[%04x] %s AF:%04x BC:%04x DE:%04x HL:%04x IX:%04x IY:%04x SP:%04x" ~
+               " I:%02x R:%02x IFF:%b,%b IM:%s")
+            .format(PC, flags, AF, BC, DE, HL, IX, IY, SP,
+                    I, R, IFF1, IFF2, IM);
     }
 
     ubyte getReg8(Reg r) {
@@ -233,11 +191,22 @@ public:
     void E(ubyte value) { DE &= 0xff00; DE |= value; }
     ubyte E()           { return DE & 0xff; }
     //══════════════════════════════════════════════════════════════════════════════════════════════
-    void H(ubyte value) { HL &= 0x00ff; HL |= (value<<8); }
+    void H(ubyte value) { HL = (HL&0x00ff) | (value<<8); }
     ubyte H()           { return (HL>>>8) & 0xff; }
-    void L(ubyte value) { HL &= 0xff00; HL |= value; }
+    void L(ubyte value) { HL = (HL&0xff00) | (value); }
     ubyte L()           { return HL & 0xff; }
     //══════════════════════════════════════════════════════════════════════════════════════════════
+    void IXH(ubyte value) { IX = (IX&0x00ff) | (value<<8); }
+    ubyte IXH()           { return (IX>>>8) & 0xff; }
+    void IXL(ubyte value) { IX = (IX&0xff00) | (value); }
+    ubyte IXL()           { return IX & 0xff; }
+    //══════════════════════════════════════════════════════════════════════════════════════════════
+    void IYH(ubyte value) { IY = (IY&0x00ff) | (value<<8); }
+    ubyte IYH()           { return (IY>>>8) & 0xff; }
+    void IYL(ubyte value) { IY = (IY&0xff00) | (value); }
+    ubyte IYL()           { return IY & 0xff; }
+    //══════════════════════════════════════════════════════════════════════════════════════════════
+
     bool flag(Flag f)           { return (F & f) != 0; }
     void flag(Flag f, bool set) { F(set ? F|f : F&~cast(uint)f); }
 

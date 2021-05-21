@@ -143,9 +143,9 @@ final class LD_r_n : Strategy {
      *   001    ld c,       0e
      *   010    ld d,       16
      *   011    ld e,       1e
-     *   100    ld h        26
-     *   101    ld l,       2e
-     *   110    lh (hl),    36 ; ld (ix+d), n ; ld (iy+d), n
+     *   100    ld h        26 ; ld ixh,n; ld iyh,n
+     *   101    ld l,       2e ; ld ixl,n; ld iyl,n
+     *   110    lh (hl),    36 ; ld (ix+d),n ; ld (iy+d),n
      *   111    ld a        3e
      *
      * Flags: None
@@ -159,8 +159,8 @@ final class LD_r_n : Strategy {
             case 1: s.C = value; break;
             case 2: s.D = value; break;
             case 3: s.E = value; break;
-            case 4: s.H = value; break;
-            case 5: s.L = value; break;
+            case 4: s.setReg8(op.regH, value); break;
+            case 5: s.setReg8(op.regL, value); break;
             case 6:
                 cpu.writeByte(getHLIXdIYd(cpu, op), value);
                 break;
@@ -179,8 +179,8 @@ final class LD_r_r : Strategy {
      * ld b,c       41      01 000 001
      * ld b,d       42      01 000 010
      * ld b,e       43      01 000 011
-     * ld b,h       44      01 000 100
-     * ld b,l       45      01 000 101
+     * ld b,h       44      01 000 100  ld b, ixh; ld b, iyh
+     * ld b,l       45      01 000 101  ld b, ixl; ld b, iyl
      * ld b, (hl)   46      01 000 110  ld b, (ix+d) ; ld b, (iy+d)
      * ld b,a       47      01 000 111
      *
@@ -188,8 +188,8 @@ final class LD_r_r : Strategy {
      * ld c,c       49      01 001 001
      * ld c,d       4a      01 001 010
      * ld c,e       4b      01 001 011
-     * ld c,h       4c      01 001 100
-     * ld c,l       4d      01 001 101
+     * ld c,h       4c      01 001 100  ld c, ixh; ld c, iyh
+     * ld c,l       4d      01 001 101  ld c, ixl; ld c, iyl
      * ld c,(hl)    4e      01 001 110  ld c, (ix+d) ; ld c, (iy+d)
      * ld c,a       4f      01 001 111
      *
@@ -197,8 +197,8 @@ final class LD_r_r : Strategy {
      * ld d,c       51      01 010 001
      * ld d,d       52      01 010 010
      * ld d,e       53      01 010 011
-     * ld d,h       54      01 010 100
-     * ld d,l       55      01 010 101
+     * ld d,h       54      01 010 100  ld d, ixh; ld d, iyh
+     * ld d,l       55      01 010 101  ld d, ixl; ld d, iyl
      * ld d,(hl)    56      01 010 110  ld d, (ix+d) ; ld d, (iy+d)
      * ld d,a       57      01 010 111
      *
@@ -206,28 +206,28 @@ final class LD_r_r : Strategy {
      * ld e,c       59      01 011 001
      * ld e,d       5a      01 011 010
      * ld e,e       5b      01 011 011
-     * ld e,h       5c      01 011 100
-     * ld e,l       5d      01 011 101
+     * ld e,h       5c      01 011 100  ld e, ixh; ld e, iyh
+     * ld e,l       5d      01 011 101  ld e, ixl; ld e, iyl
      * ld e,(hl)    5e      01 011 110  ld e, (ix+d) ; ld e, (iy+d)
      * ld e,a       5f      01 011 111
      *
-     * ld h,b       60      01 100 000
-     * ld h,c       61      01 100 001
-     * ld h,d       62      01 100 010
-     * ld h,e       63      01 100 011
-     * ld h,h       64      01 100 100
-     * ld h,l       65      01 100 101
-     * ld h,(hl)    66      01 100 110  ld h, (ix+d) ; ld h, (iy+d)
-     * ld h,a       67      01 100 111
+     * ld h,b       60      01 100 000  ld ixh,b    ; ld iyh,b
+     * ld h,c       61      01 100 001  ld ixh,c    ; ld iyh,c
+     * ld h,d       62      01 100 010  ld ixh,d    ; ld iyh,d
+     * ld h,e       63      01 100 011  ld ixh,e    ; ld iyh,e
+     * ld h,h       64      01 100 100  ld ixh,ixl  ; ld iyh,iyl
+     * ld h,l       65      01 100 101  ld ixh,ixl  ; ld iyh,iyl
+     * ld h,(hl)    66      01 100 110  ld h,(ix+d) ; ld h,(iy+d)
+     * ld h,a       67      01 100 111  ld ixh,a    ; ld iyh,a
      *
-     * ld l,b       68      01 101 000
-     * ld l,c       69      01 101 001
-     * ld l,d       6a      01 101 010
-     * ld l,e       6b      01 101 011
-     * ld l,h       6c      01 101 100
-     * ld l,l       6d      01 101 101
-     * ld l,(hl)    6e      01 101 110  ld l, (ix+d) ; ld l, (iy+d)
-     * ld l,a       6f      01 101 111
+     * ld l,b       68      01 101 000  ld ixl,b    ; ld iyl,b
+     * ld l,c       69      01 101 001  ld ixl,c    ; ld iyl,c
+     * ld l,d       6a      01 101 010  ld ixl,d    ; ld iyl,d
+     * ld l,e       6b      01 101 011  ld ixl,e    ; ld iyl,e
+     * ld l,h       6c      01 101 100  ld ixl,ixh  ; ld iyl,iyh
+     * ld l,l       6d      01 101 101  ld ixl,ixl  ; ld iyl,iyl
+     * ld l,(hl)    6e      01 101 110  ld l,(ix+d) ; ld l,(iy+d)
+     * ld l,a       6f      01 101 111  ld ixl,a    ; ld iyl,a
      *
      * ld (hl),b    70      01 110 000  ld (ix+d), b ; ld (iy+d), b
      * ld (hl),c    71      01 110 001  ld (ix+d), c ; ld (iy+d), c
@@ -242,8 +242,8 @@ final class LD_r_r : Strategy {
      * ld a,c       79      01 111 001
      * ld a,d       7a      01 111 010
      * ld a,e       7b      01 111 011
-     * ld a,h       7c      01 111 100
-     * ld a,l       7d      01 111 101
+     * ld a,h       7c      01 111 100  ld a,ixh    ; ld a,iyh
+     * ld a,l       7d      01 111 101  ld a,ixl    ; ld a,iyl
      * ld a,(hl)    7e      01 111 110  ld a, (ix+d) ; ld a, (iy+d)
      * ld a,a       7f      01 111 111
      *
@@ -253,8 +253,8 @@ final class LD_r_r : Strategy {
         auto s = cpu.state;
         auto src  = op.code & 7;
         auto dest = (op.code >>> 3) & 7;
-        auto srcReg = REGS[src];
-        auto destReg = REGS[dest];
+        Reg srcReg = REGS[src];
+        Reg destReg = REGS[dest];
 
         if(destReg==Reg.HL) {
             auto addr = getHLIXdIYd(cpu, op);
@@ -263,6 +263,9 @@ final class LD_r_r : Strategy {
             auto addr = getHLIXdIYd(cpu, op);
             s.setReg8(destReg, cpu.readByte(addr));
         } else {
+            srcReg = getAdjustedReg8(op, srcReg);
+            destReg = getAdjustedReg8(op, destReg);
+
             s.setReg8(destReg, s.getReg8(srcReg));
         }
     }
@@ -282,7 +285,7 @@ final class ALG_a_r : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s      = cpu.state;
-        auto rrr    = REGS[op.code & 7];
+        auto rrr    = getAdjustedReg8(op, REGS[op.code & 7]);
         auto ccc    = (op.code>>>3) & 7;
         auto src    = rrr==Reg.HL ? cpu.readByte(getHLIXdIYd(cpu, op))
                                   : s.getReg8(rrr);
@@ -496,8 +499,8 @@ final class INCr : Strategy {
      * 00001100 inc c    0c
      * 00010100 inc d    14
      * 00011100 inc e    1c
-     * 00100100 inc h    24
-     * 00101100 inc l    2c
+     * 00100100 inc h    24 ; inc ixh; inc iyh
+     * 00101100 inc l    2c ; inc ixl; inc iyl
      * 00110100 inc (hl) 34 ; inc (ix+d); inc (iy+d)
      * 00111100 inc a    3c
      *
@@ -512,8 +515,14 @@ final class INCr : Strategy {
             case 1: before = s.C; s.C((s.C+1).as!ubyte); break;
             case 2: before = s.D; s.D((s.D+1).as!ubyte); break;
             case 3: before = s.E; s.E((s.E+1).as!ubyte); break;
-            case 4: before = s.H; s.H((s.H+1).as!ubyte); break;
-            case 5: before = s.L; s.L((s.L+1).as!ubyte); break;
+            case 4:
+                before = s.getReg8(op.regH);
+                s.setReg8(op.regH, (s.H+1).as!ubyte);
+                break;
+            case 5:
+                before = s.getReg8(op.regL);
+                s.setReg8(op.regL, (s.L+1).as!ubyte);
+                break;
             case 6:
                 auto addr = getHLIXdIYd(cpu, op);
                 auto value = before = cpu.readByte(addr);
@@ -552,8 +561,14 @@ final class DECr : Strategy {
             case 1: before = s.C; s.C((s.C-1).as!ubyte); break;
             case 2: before = s.D; s.D((s.D-1).as!ubyte); break;
             case 3: before = s.E; s.E((s.E-1).as!ubyte); break;
-            case 4: before = s.H; s.H((s.H-1).as!ubyte); break;
-            case 5: before = s.L; s.L((s.L-1).as!ubyte); break;
+            case 4:
+                before = s.getReg8(op.regH);
+                s.setReg8(op.regH, (s.H-1).as!ubyte);
+                break;
+            case 5:
+                before = s.getReg8(op.regL);
+                s.setReg8(op.regL, (s.L-1).as!ubyte);
+                break;
             case 6:
                 auto addr = getHLIXdIYd(cpu, op);
                 auto value = before = cpu.readByte(addr);

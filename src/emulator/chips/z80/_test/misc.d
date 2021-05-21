@@ -26,8 +26,6 @@ void nop() {
         nop
     ", [0x00]);
 
-    prevState.PC = state.PC;
-    assert(prevState == state);
     assertFlagsClear(allFlags());
 }
 void cpl() {

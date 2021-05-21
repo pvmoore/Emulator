@@ -11,8 +11,6 @@ __gshared Z80Ports ports;
 __gshared Assembler assembler;
 __gshared Disassembler disassembler;
 __gshared State state;
-__gshared State prevState;
-
 
 enum {
     C   = State.Flag.C,     // carry
@@ -97,8 +95,6 @@ void executeCode(ubyte[] code, long count, bool dumpState = true) {
     cpu.load(0x1000, code);
     cpu.setPC(0x1000);
 
-    prevState = state.clone();
-
     foreach(i; 0..count) {
         auto instr = cpu.execute();
         if(dumpState) {
@@ -174,37 +170,3 @@ void test(void function() preState,
         if(postAssert) postAssert();
     }
 }
-
-
-unittest {
-
-
-
-//##################################################################################################
-
-void add_adc() {
-    cpu.reset();
-}
-void sub_sbc() {
-    cpu.reset();
-}
-void shift_and_roll() {
-    cpu.reset();
-}
-void jumps() {
-    cpu.reset();
-}
-void call_ret() {
-    cpu.reset();
-}
-void push_pop() {
-    cpu.reset();
-}
-void in_out() {
-    cpu.reset();
-}
-void rst() {
-    cpu.reset();
-}
-
-} // unittest

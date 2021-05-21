@@ -31,14 +31,19 @@ struct Op {
     Reg regH = Reg.H;   // H, IXH, IYH
     Reg regL = Reg.L;   // L, IXL, IYL
 }
-byte getDisplacement(Z80 cpu, Op op) {
-    if(op.regHL == Reg.HL) return 0;
-    ubyte d = cpu.fetchByte();
-    return d;
-}
 // HL ; IX+d ; IY+d
 ushort getHLIXdIYd(Z80 cpu, Op op) {
     return (cpu.state.getReg16(op.regHL) + getDisplacement(cpu, op)).as!ushort;
+}
+Reg getAdjustedReg8(Op op, Reg r) {
+    if(r == Reg.H) return op.regH;
+    if(r == Reg.L) return op.regL;
+    return r;
+}
+private byte getDisplacement(Z80 cpu, Op op) {
+    if(op.regHL == Reg.HL) return 0;
+    ubyte d = cpu.fetchByte();
+    return d;
 }
 private {
     enum : string {

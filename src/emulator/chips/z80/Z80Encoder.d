@@ -31,7 +31,7 @@ final class Z80Encoder : Encoder {
             "a","b","c","d","e","h","l",
             "r", "i",
             "af","af'",
-            "bc","de","hl","sp","ix","iy",
+            "bc","de","hl","sp","ix","iy","ixh","ixl","iyh","iyl"
         ]);
         this.CC = new Set!string;
         this.CC.add(["c", "nc", "z", "nz", "po", "pe", "p", "m"]);
