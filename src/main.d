@@ -4,6 +4,8 @@ import std.stdio;
 import emulator.all;
 import emulator.chips.z80.all;
 import emulator.machine.spectrum.all;
+import std.string : indexOf, strip, split;
+import std.format : format;
 
 void main() {
 
@@ -14,13 +16,67 @@ void main() {
     // commodore.execute();
 
     //decode();
-    loadTap();
+    //loadTap();
     //loadZ80Snapshot();
+
+    //rewriteZexdoc();
+
+    loadAsm();
+}
+void rewriteZexdoc() {
+    auto load = File("/temp/zexdoc.asm", "rb");
+    auto save = File("/temp/zexdoc2.asm", "wb");
+    scope(exit) load.close();
+    scope(exit) save.close();
+
+    auto str = new char[load.size()];
+    load.rawRead(str);
+    string dest = cast(string)str;
+    writefln("loaded %s chars", str.length);
+
+    while(true) {
+        auto i = dest.indexOf("tmsg");
+        if(i==-1) break;
+
+        auto q = dest.indexOf("'", i);
+        assert(q!=-1);
+
+        auto q2 = dest.indexOf("'", q+1);
+        assert(q2!=-1);
+
+        dest = dest[0..i] ~ "dm\t\t" ~ dest[q..q2+1] ~ ",'$' " ~ dest[q2+1..$];
+    }
+    int count = 0;
+    while(true) {
+        auto i = dest.indexOf("tstr");
+        if(i==-1) break;
+        count++;
+        auto eol = dest.indexOf(10, i);
+        auto sc = dest.indexOf(';', i);
+        if(sc!=-1 && sc < eol) eol = sc;
+        auto line = dest[i+4..eol].strip();
+        auto tokens = line.split(",");
+
+        writefln("line = %s", line);
+        writefln("%s", tokens);
+        assert(tokens.length==13, "%s count=%s".format(tokens.length, count));
+
+        auto db = "\n\tdb\t" ~ tokens[0] ~ "," ~ tokens[1] ~ "," ~
+                           tokens[2] ~ "," ~ tokens[3] ~ "\n";
+        auto dw = "\tdw\t" ~ tokens[4] ~ "," ~ tokens[5] ~ "," ~ tokens[6] ~ "," ~
+                           tokens[7] ~ "," ~ tokens[8] ~ "," ~ tokens[9] ~ "\n";
+        auto db2 = "\tdb\t" ~ tokens[10] ~ "," ~ tokens[11] ~ "\n";
+        auto dw2 = "\tdw\t" ~ tokens[12];
+
+        dest = dest[0..i] ~ db ~ dw ~ db2 ~ dw2 ~ dest[eol..$];
+    }
+    save.rawWrite(dest);
 }
 void loadAsm() {
     //auto filename = "/temp/emulators/spectrum/spectrum-rom.asm";
     //auto filename = "/temp/emulators/spectrum/jetpac.asm";
-    auto filename = "/temp/emulators/spectrum/manic-miner.asm";
+    //auto filename = "/temp/emulators/spectrum/manic-miner.asm";
+    auto filename = "/temp/zexdoc2.asm";
 
     auto src = cast(string)From!"std.file".read(filename);
 

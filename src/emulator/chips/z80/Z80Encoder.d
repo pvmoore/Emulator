@@ -124,7 +124,10 @@ private:
         // rst - convert decimal to hex and remove $ or &
         if(asmTokensLower.length==2 && "rst"==asmTokensLower[0]) {
             auto n = asmTokensLower[1];
-            if(n.startsWith("$") || n.startsWith("&")) {
+
+            if(n.endsWith("h") || n.startsWith("0x")) {
+                asmTokensLower[1] = "%02x".format(convertToInt(n));
+            } else if(n.startsWith("$") || n.startsWith("&")) {
                 asmTokensLower[1] = asmTokensLower[1][1..$];
             } else if(!n.isOneOf("10", "18", "20", "28", "30", "38")) {
                 asmTokensLower[1] = "%02x".format(asmTokensLower[1].to!int(10));

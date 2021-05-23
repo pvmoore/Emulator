@@ -135,7 +135,7 @@ private:
 
             if(first.isOneOf("if", "endif", "align", ".align", "macro", "rept", ".rept", "dup",
                             ".dup")) {
-                todo();
+                todo("implement %s on line %s".format(first, lineNumber));
             }
             if("include"==first) {
                 todo();
@@ -146,6 +146,7 @@ private:
                 if(second.isOneOf("equ", ".equ")) {
                     auto key = strings[0];
                     if(key.endsWith(":")) key = key[0..$-1];
+                    //writefln("key = %s %s", key, strings);
                     constants[key] = convertNumbersToInt(strings[2..$]);
                     continue;
                 }
@@ -155,7 +156,6 @@ private:
             if(strings.length > 1) {
                 if(first.isOneOf("org", ".org", ".loc")) {
                     pc = convertToInt(strings[1]);
-                    log("pc = %s", pc);
                     continue;
                 }
             }
@@ -183,7 +183,9 @@ private:
                 if(!_handleLabel()) continue;
             }
 
-            // if we get here then this is an opcode
+            // ==============================================================
+            // If we get here then this is an opcode
+            // ==============================================================
             line.tokens = strings;
             string[] lower = strings.map!(it=>it.toLower()).array;
 
@@ -235,9 +237,11 @@ private:
                 absExprParser.addReference("$", f.address);
                 relExprParser.addReference("$", f.address);
 
+                auto tokens = convertNumbersToInt(f.expressionTokens);
+
                 uint value = f.isRelative
-                    ? relExprParser.parse(convertNumbersToInt(f.expressionTokens))
-                    : absExprParser.parse(convertNumbersToInt(f.expressionTokens));
+                    ? relExprParser.parse(tokens)
+                    : absExprParser.parse(tokens);
 
                 if(f.negate) {
                     value = -value;
@@ -259,7 +263,9 @@ private:
                     todo("handle more than 2 fixup bytes");
                 }
             }catch(Exception e) {
-                throw new Exception("Fixup failed on line %s".format(line.number), e);
+                writefln("Fixup failed on line %s:\n\tfixup=%s\n\tline = %s"
+                    .format(line.number, f, line.toString()));
+                throw e;
             }
         }
     }
@@ -281,12 +287,6 @@ private:
     }
     void data(string[] strings, Line* line) {
         switch(strings[0].toLower()) {
-            case "db":
-            case ".db":
-            case "defb":
-            case ".byte":
-                dataByte(strings[1..$], line);
-                break;
             case "dw":
             case ".dw":
             case "defw":
@@ -299,26 +299,28 @@ private:
             case ".blkb":
                 dataStorage(strings[1..$], line);
                 break;
+            case "db":
+            case ".db":
+            case "defb":
+            case ".byte":
             case "defm":
             case "dm":
             case ".dm":
             case ".text":
             case ".ascii":
-                dataString(strings[1..$], line);
+                dataByte(strings[1..$], line);
                 break;
             case ".asciz":
-                dataString(strings[1..$], line, true);
+                dataByte(strings[1..$], line, true);
                 break;
             default:
                 throw new Exception("Unhandled data type: %s".format(strings[0]));
         }
         pc += line.code.length.as!int;
     }
-    void dataByte(string[] strings, Line* line) {
-        while(strings.length > 0) {
-            db(strings, line);
-        }
-    }
+    /**
+     *  Handle word data.
+     */
     void dataWord(string[] strings, Line* line) {
         while(strings.length > 0) {
             auto end = strings.indexOf(",");
@@ -365,17 +367,22 @@ private:
         }
     }
     /**
+     * Handle byte or string data.
+     *
+     * db 5, 3, 'f'
      * dm 'text'
      * dm "text", 5, 'hello' + $80
      */
-    void dataString(string[] strings, Line* line, bool zSuffix = false) {
+    void dataByte(string[] strings, Line* line, bool zSuffix = false) {
 
         expandStringsToNumbers(strings);
 
         if(zSuffix) {
             strings ~= [",", "0"];
         }
-        dataByte(strings, line);
+        while(strings.length > 0) {
+            db(strings, line);
+        }
     }
     /**
      * Parse a single byte data element which can be a literal number

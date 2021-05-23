@@ -56,7 +56,21 @@ N   equ 2
     assert(lines[3].code == [0xfd, 0x7e, 0xfe]);
     assert(lines[4].code == [0xdd, 0x7e, 0x02]);
     assert(lines[5].code == [0xfd, 0x7e, 0xfd]);
+}
+void asmProblems() {
+    assembler.reset();
 
+    auto lines = assembler.encode("
+        add	a,'a'-'9'-1
+    ");
+    // expression tokens: ["'a'", "-", "'9'", "4294967295"])
+    // fixup tokens     : 'add a , 'a' - '9' -1'
+
+    // 'a' = 97
+    // '9' = 57
+    // 97-57-1 = 39 = 0x27
+    assert(lines.length==1);
+    assert(lines[0].code == [0xc6, 0x27]);
 }
 void labels() {
     assembler.reset();
@@ -126,6 +140,12 @@ here:   inc a       ; 0x0005
     assert(lines.length == 4);
     assert(lines[1].code == [0x10, 0x03], "%s".format(lines[1].code));
 
+    //------------------------------------------
+    assembler.reset();
+    lines = assembler.encode("
+label1:push af
+    ");
+    assert(lines.length==1);
 }
 void immediateLiterals() {
     assembler.reset();
@@ -279,6 +299,7 @@ defb 6
 setup();
 
 assemble1();
+asmProblems();
 labels();
 immediateLiterals();
 constants();

@@ -28,8 +28,6 @@ enum Kind {
     TEXT,
     NUMBER,
     STRING,
-    LABEL,
-    VAR,
 
     COMMA,
     PLUS,

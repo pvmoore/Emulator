@@ -32,9 +32,10 @@ public:
                 case ',':
                     addToken(Kind.COMMA);
                     break;
-                // case ':':
-                //     addToken(Kind.COLON);
-                //     break;
+                case ':':
+                    pos++;
+                    addToken();
+                    break;
                 case '\'':
                     if(peek(-2)=='a' && peek(-1)=='f') {
                         // Z80 hack for af'
@@ -49,7 +50,7 @@ public:
                     addToken(Kind.PLUS);
                     break;
                 case '-':
-                    if(bufStart == pos && peek(1).isDigit()) {
+                    if(bufStart == pos && peek(1).isDigit() && !prevTokenWasString()) {
                          pos++;
                     } else {
                         addToken(Kind.MINUS);
@@ -134,10 +135,15 @@ private:
         }
         return isEOL;
     }
+    auto prevTokenWasString() {
+        if(tokens.length==0) return false;
+        auto t = tokens[$-1].text(text);
+        return t.length>1 && (t[0]=='\'' || t[0]=='"');
+    }
     auto determineTokenKind(string t) {
-        if(t[0] >= '0' && t[0] <= '9') return Kind.NUMBER;
-        if(t[0]=='$' || t[0]=='&') return Kind.NUMBER;
-        if(t[0]=='\'' || t[0]=='"') return Kind.NUMBER;
+        //if(t[0] >= '0' && t[0] <= '9') return Kind.NUMBER;
+        //if(t[0]=='$' || t[0]=='&') return Kind.NUMBER;
+        //if(t[0]=='\'' || t[0]=='"') return Kind.NUMBER;
         return Kind.TEXT;
     }
     void doAddToken(Kind k, string text) {
