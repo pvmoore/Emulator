@@ -185,17 +185,15 @@ private:
         return false;
     }
     bool matchesTokens(string[] asmTokens, string[] asmTokensLower, const(string[]) instrTokens) {
+        Encoder.Fixup fixup;
+        bool negate;
+
         for(int i=0; i<asmTokens.length && i<instrTokens.length; i++) {
 
-            auto isn  = isN(asmTokensLower[i], instrTokens[i]);
-            auto isnn = !isn && isNN(asmTokensLower[i], instrTokens[i]);
-            Encoder.Fixup fixup;
+            const isn  = isN(asmTokensLower[i], instrTokens[i]);
+            const isnn = !isn && isNN(asmTokensLower[i], instrTokens[i]);
 
             if(isn || isnn) {
-                fixup.numBytes = isn ? 1 : 2;
-                fixup.tokenIndex = i;
-                fixup.isRelative = asmTokensLower[0] == "jr" ||
-                                   asmTokensLower[0] == "djnz";
 
                 if(asmTokens[i]=="(") {
                     // assume this instruction has indirect memory access
@@ -205,13 +203,20 @@ private:
 
                 auto end = matchTokensBackwards(asmTokens, asmTokensLower, instrTokens);
                 if(end != -1) {
+                    fixup.numBytes   = isn ? 1 : 2;
+                    fixup.tokenIndex = i;
+                    fixup.isRelative = asmTokensLower[0] == "jr" ||
+                                       asmTokensLower[0] == "djnz";
+                    fixup.negate = negate;
                     fixup.tokens = asmTokens[i..end+1].dup;
                     match.fixups ~= fixup;
                     return true;
                 } else {
                     return false;
                 }
-
+            } else if(asmTokensLower[i] == "-" && instrTokens[i] == "+") {
+                // Allow this to match but remember to negate the displacement later
+                negate = true;
             } else if(asmTokensLower[i] != instrTokens[i]) {
                 return false;
             }

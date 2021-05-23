@@ -19,7 +19,10 @@
             "windows": {
                 "command": "run_debug_build.bat test"
             },
-
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -32,6 +35,7 @@
             "windows": {
                 "command": "run_release_build.bat test"
             },
+
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -44,10 +48,7 @@
             "windows": {
                 "command": "run_unittest_build.bat test"
             },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"

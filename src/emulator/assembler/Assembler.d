@@ -92,6 +92,7 @@ private:
         uint numBytes;
         uint byteIndex;
         bool isRelative;
+        bool negate;
         string[] expressionTokens;
     }
 
@@ -122,6 +123,7 @@ private:
             assert(length>0);
 
             auto line = getLineAtAddress(pc);
+            line.number = lineNumber;
 
             string first  = strings[0].toLower();
             string second = strings.length > 1 ? strings[1].toLower() : "";
@@ -202,7 +204,7 @@ private:
 
                 log("fixup tokenIindex: %s, byteIndex: %s, expression: %s", index, j, f.tokens);
 
-                fixups ~= Fixup(pc, f.numBytes, j, f.isRelative, f.tokens);
+                fixups ~= Fixup(pc, f.numBytes, j, f.isRelative, f.negate, f.tokens);
 
                 j += f.numBytes;
             }
@@ -228,30 +230,37 @@ private:
             auto line = getLineAtAddress(f.address);
             auto numBytes = f.numBytes;
             auto byteIndex = f.byteIndex;
+            try{
 
-            absExprParser.addReference("$", f.address);
-            relExprParser.addReference("$", f.address);
+                absExprParser.addReference("$", f.address);
+                relExprParser.addReference("$", f.address);
 
-            uint value = f.isRelative
-                ? relExprParser.parse(convertNumbersToInt(f.expressionTokens))
-                : absExprParser.parse(convertNumbersToInt(f.expressionTokens));
+                uint value = f.isRelative
+                    ? relExprParser.parse(convertNumbersToInt(f.expressionTokens))
+                    : absExprParser.parse(convertNumbersToInt(f.expressionTokens));
 
-            //log("fixup address %04x value = %s", f.address, value);
-
-            if(numBytes==1) {
-                line.code[byteIndex] = value.as!ubyte;
-            } else if(numBytes==2) {
-                if(littleEndian) {
-                    line.code[byteIndex+0] = (value & 0xff).as!ubyte;
-                    line.code[byteIndex+1] = ((value>>>8) & 0xff).as!ubyte;
-                } else {
-                    line.code[byteIndex+0] = ((value>>>8) & 0xff).as!ubyte;
-                    line.code[byteIndex+1] = (value & 0xff).as!ubyte;
+                if(f.negate) {
+                    value = -value;
                 }
-            } else {
-                todo("handle more than 2 fixup bytes");
-            }
 
+                //log("fixup address %04x value = %s", f.address, value);
+
+                if(numBytes==1) {
+                    line.code[byteIndex] = value.as!ubyte;
+                } else if(numBytes==2) {
+                    if(littleEndian) {
+                        line.code[byteIndex+0] = (value & 0xff).as!ubyte;
+                        line.code[byteIndex+1] = ((value>>>8) & 0xff).as!ubyte;
+                    } else {
+                        line.code[byteIndex+0] = ((value>>>8) & 0xff).as!ubyte;
+                        line.code[byteIndex+1] = (value & 0xff).as!ubyte;
+                    }
+                } else {
+                    todo("handle more than 2 fixup bytes");
+                }
+            }catch(Exception e) {
+                throw new Exception("Fixup failed on line %s".format(line.number), e);
+            }
         }
     }
     Tuple!(string[],bool) fetchLine() {
@@ -330,6 +339,7 @@ private:
                     2,
                     line.code.length.as!int,
                     false,
+                    false,
                     strings[0..end].dup
                 );
                 fixups ~= f;
@@ -388,6 +398,7 @@ private:
                 1,
                 line.code.length.as!int,
                 false,
+                false,
                 strings[0..end].dup
             );
             fixups ~= f;
@@ -428,7 +439,7 @@ private:
     Line* getLineAtAddress(uint pc) {
         auto p = pc in addressToLine;
         if(!p) {
-            addressToLine[pc] = Line(pc);
+            addressToLine[pc] = Line.atAddress(pc);
             return getLineAtAddress(pc);
         }
         return p;

@@ -38,6 +38,24 @@ void assemble1() {
     assert(lines[1].tokens == ["ld", "a", ",", "$01"], "%s".format(lines[1].tokens));
 
     //-------------------------------------------
+    assembler.reset();
+
+    lines = assembler.encode("
+N   equ 2
+        ld a, (ix+$01)
+        ld a, (ix-1)
+        ld a, (iy+N)
+        ld a, (iy-N)
+        ld a, (ix+1+1)
+        ld a, (iy-N+1)
+    ");
+
+    assert(lines[0].code == [0xdd, 0x7e, 0x01]);
+    assert(lines[1].code == [0xdd, 0x7e, 0xff]);
+    assert(lines[2].code == [0xfd, 0x7e, 0x02]);
+    assert(lines[3].code == [0xfd, 0x7e, 0xfe]);
+    assert(lines[4].code == [0xdd, 0x7e, 0x02]);
+    assert(lines[5].code == [0xfd, 0x7e, 0xfd]);
 
 }
 void labels() {
@@ -155,9 +173,12 @@ a: db 0, 1, 1+1, n
 b:
    defb 0xfe
    .byte 99
+   db -1
+   db -n
+   DEFB %00011111,%00011111
     ");
 
-    assert(lines.length==5);
+    assert(lines.length==8);
     assert(assembler.getLabelAddress("a") == 0x0000);
     assert(assembler.getLabelAddress("b") == 0x0006);
 
@@ -172,6 +193,9 @@ b:
     assert(lines[2].code == [0x06]);
     assert(lines[3].code == [0xfe]);
     assert(lines[4].code == [99]);
+    assert(lines[5].code == [0xff]);
+    assert(lines[6].code == [0xfc]);
+    assert(lines[7].code == [0x1f, 0x1f]);
 }
 void dataDW() {
     assembler.reset();

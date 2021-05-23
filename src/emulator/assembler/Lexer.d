@@ -61,9 +61,9 @@ public:
                 case '/':
                     addToken(Kind.DIV);
                     break;
-                case '%':
-                    addToken(Kind.MOD);
-                    break;
+                // case '%':
+                //     addToken(Kind.MOD);
+                //     break;
                 case '(':
                     addToken(Kind.LBRACKET);
                     break;

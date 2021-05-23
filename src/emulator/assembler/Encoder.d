@@ -24,6 +24,7 @@ interface Encoder {
         int numBytes;
         int tokenIndex;
         bool isRelative;
+        bool negate;
         string[] tokens;
     }
 

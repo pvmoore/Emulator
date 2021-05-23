@@ -3,10 +3,15 @@ module emulator.assembler.Line;
 import emulator.assembler.all;
 
 static struct Line {
+    uint number;
     uint address;
     ubyte[] code;
     string[] tokens;
     string[] labels;
+
+    static Line atAddress(uint pc) {
+        return Line(0, pc);
+    }
 
     bool isEmpty() {
         return code.length==0 && tokens.length==0 && labels.length==0;

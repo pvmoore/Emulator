@@ -13,14 +13,17 @@ string[] convertNumbersToInt(return string[] tokens) {
 }
 
 bool isNumber(string value) {
-    if(value[0]=='$' || value[0]=='&') return true;
+    if(value[0]=='$' || value[0]=='&' || value[0]=='%') return true;
     if(value.length>2 && value[0]=='0' && value[1]=='x') return true;
     if(value[0]=='-') value = value[1..$];
-    return isDigit(value[0]);
+    return value.length > 0 && isDigit(value[0]);
 }
 uint convertToInt(string s) {
     if(s[0]=='$' || s[0]=='&') {
         return to!uint(s[1..$].toLower(), 16);
+    }
+    if(s[0]=='%') {
+        return to!uint(s[1..$], 2);
     }
     if(s.length>2 && s[0]=='0' && s[1]=='x') {
         return to!uint(s[2..$].toLower(), 16);
