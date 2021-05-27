@@ -21,7 +21,8 @@ https://skoolkid.github.io/rom/
 
 ### Video Memory
 
-32x24 bytes, 256x192 pixels
+32x24 bytes
+256x192 pixels
 
 
 - 6144 bytes at [0x4000 - 0x57ff]

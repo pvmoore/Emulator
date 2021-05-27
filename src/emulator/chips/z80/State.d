@@ -79,11 +79,12 @@ public:
     void reset() {
         //AF = BC = DE = HL = IX = IY = SP = 0;
         //AF1 = BC1 = DE1 = HL1 = 0;
+        // I think these are the only registers that get cleared on Z80
         PC = 0;
         I = R = 0;
+        IM = 0;
         IFF1 = false;
         IFF2 = false;
-        IM = 0;
     }
     override string toString() {
         string flags =
