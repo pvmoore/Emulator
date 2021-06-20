@@ -24,8 +24,8 @@ void main() {
     loadAsm();
 }
 void rewriteZexdoc() {
-    auto load = File("/temp/zexdoc.asm", "rb");
-    auto save = File("/temp/zexdoc2.asm", "wb");
+    auto load = File("/temp/emulators/spectrum/zexdoc.asm", "rb");
+    auto save = File("/temp/emulators/spectrum/zexdoc2.asm", "wb");
     scope(exit) load.close();
     scope(exit) save.close();
 
@@ -76,7 +76,7 @@ void loadAsm() {
     //auto filename = "/temp/emulators/spectrum/spectrum-rom.asm";
     //auto filename = "/temp/emulators/spectrum/jetpac.asm";
     //auto filename = "/temp/emulators/spectrum/manic-miner.asm";
-    auto filename = "/temp/zexdoc2.asm";
+    auto filename = "/temp/emulators/spectrum/zexdoc2.asm";
 
     auto src = cast(string)From!"std.file".read(filename);
 

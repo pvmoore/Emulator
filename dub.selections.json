@@ -1,6 +1,14 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"common": "~master"
+		"common": "~master",
+		"derelict-glfw3": "4.0.0-beta.1",
+		"derelict-util": "3.0.0-beta.2",
+		"derelict-vulkan": "0.0.20",
+		"fonts": "~master",
+		"logging": "~master",
+		"maths": "~master",
+		"resources": "~master",
+		"vulkan": "~master"
 	}
 }

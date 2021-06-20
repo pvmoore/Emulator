@@ -14,6 +14,22 @@
             "group": "build"
         },
         {
+            "label": "**** Emulator UI (debug) ****",
+            "type": "shell",
+            "windows": {
+                "command": "run_debug_build.bat ui"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "**** DEBUG ****",
             "type": "shell",
             "windows": {

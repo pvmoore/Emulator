@@ -17,9 +17,20 @@ buildType "release" {
 
 configuration "test" {
 	mainSourceFile "src/main.d"
+    excludedSourceFiles "src/main_ui.d"
+
+	targetType "executable"
+	targetName "emulator"
+}
+
+configuration "ui" {
+	mainSourceFile "src/main_ui.d"
+    excludedSourceFiles "src/main.d"
 
 	targetType "executable"
 	targetName "emulator"
 }
 
 dependency "common" version="~master"
+dependency "logging" version="~master"
+dependency "vulkan" version="~master"
