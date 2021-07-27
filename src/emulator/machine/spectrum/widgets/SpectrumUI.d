@@ -3,7 +3,6 @@ module emulator.machine.spectrum.widgets.SpectrumUI;
 import emulator.all;
 import emulator.machine.spectrum.all;
 import vulkan.all;
-import vulkan.gui;
 
 final class SpectrumUI : VulkanApplication {
     Vulkan vk;
@@ -12,7 +11,6 @@ final class SpectrumUI : VulkanApplication {
     VkRenderPass renderPass;
 
     FPS fps;
-    GUI gui;
     Camera2D camera;
     VkClearValue bgColour;
 
@@ -38,7 +36,21 @@ final class SpectrumUI : VulkanApplication {
             frameBuffers:   3
         };
         VulkanProperties vprops = {
-            appName: NAME
+            appName: NAME,
+            imgui: {
+                enabled: true,
+                configFlags:
+                    ImGuiConfigFlags_NoMouseCursorChange |
+                    ImGuiConfigFlags_DockingEnable |
+                    ImGuiConfigFlags_ViewportsEnable,
+                fontPaths: [
+                    "/pvmoore/_assets/fonts/Roboto-Regular.ttf",
+                    "/pvmoore/_assets/fonts/RobotoCondensed-Regular.ttf"
+                ],
+                fontSizes: [
+                    22,
+                    22]
+            }
         };
 
 		this.vk = new Vulkan(this, wprops, vprops);
@@ -59,8 +71,6 @@ final class SpectrumUI : VulkanApplication {
 
             if(context) context.dumpMemory();
 
-            if(gui) gui.destroy();
-
             if(fps) fps.destroy();
             if(renderPass) device.destroyRenderPass(renderPass);
             if(context) context.destroy();
@@ -79,7 +89,6 @@ final class SpectrumUI : VulkanApplication {
         initScene();
     }
     void update(Frame frame) {
-        gui.beforeRenderPass(frame);
         fps.beforeRenderPass(frame, vk.getFPS);
     }
     override void render(Frame frame) {
@@ -99,7 +108,7 @@ final class SpectrumUI : VulkanApplication {
             //VSubpassContents.SECONDARY_COMMAND_BUFFERS
         );
 
-        gui.insideRenderPass(frame);
+        renderImguiWindows(frame);
         fps.insideRenderPass(frame);
 
         b.endRenderPass();
@@ -150,21 +159,13 @@ private:
 
         this.bgColour = clearColour(0.0f,0,0,1);
 
-        this.gui = new GUI(context);
-        gui.camera(camera);
-
         this.codeUI = new CodeUI(spectrum);
-        this.memoryUI = new MemoryUI(spectrum);
-        this.portsUI = new PortsUI(spectrum);
-        this.regsUI = new RegsUI(spectrum);
+        this.memoryUI = new MemoryUI(context, spectrum);
+        this.portsUI = new PortsUI(context, spectrum);
+        this.regsUI = new RegsUI(context, spectrum);
         this.screenUI = new ScreenUI(spectrum);
 
-        gui.getStage()
-           .add(codeUI)
-           .add(memoryUI)
-           .add(regsUI)
-           .add(portsUI)
-           .add(screenUI);
+        initImguiStyle();
     }
     void createRenderPass(VkDevice device) {
         this.log("Creating render pass");
@@ -184,5 +185,68 @@ private:
             [subpass],
             subpassDependency2()//[dependency]
         );
+    }
+    void initImguiStyle() {
+        auto viewport = igGetMainViewport();
+        auto style = igGetStyle();
+
+        auto windowPos = viewport.Pos;
+        auto windowSize = viewport.Size;
+        auto workSize = viewport.WorkSize;
+
+        style.ScrollbarSize = 24;
+        style.ScrollbarRounding = 5;
+        style.GrabMinSize = 10;
+        style.ItemSpacing = ImVec2(5,0);
+        style.WindowTitleAlign = ImVec2(0.0, 0.5);
+
+        //style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(1,1,0,1);
+    }
+    void renderMenu(Frame frame) {
+        if(igBeginMenuBar()) {
+
+            if(igBeginMenu("File", true)) {
+                if(igMenuItem("Open..", "Ctrl+O")) {
+                    log("Open clicked");
+                }
+                if(igMenuItem("Save", "Ctrl+S", true)) {
+
+                }
+                if(igMenuItem("Exit", "Ctrl+X"))  {
+
+                }
+                igEndMenu();
+            }
+
+            igEndMenuBar();
+        }
+    }
+    void renderImguiWindows(Frame frame) {
+        vk.imguiRenderStart(frame);
+
+        igSetNextWindowPos(ImVec2(0,0), ImGuiCond_Always, ImVec2(0.0, 0.0));
+        igSetNextWindowSize(ImVec2(-1, -1), ImGuiCond_Always);
+
+        auto flags = ImGuiWindowFlags_NoTitleBar
+            | ImGuiWindowFlags_NoSavedSettings
+            | ImGuiWindowFlags_NoDocking
+            | ImGuiWindowFlags_NoMove
+            | ImGuiWindowFlags_NoResize
+            | ImGuiWindowFlags_NoBackground
+            | ImGuiWindowFlags_MenuBar;
+
+        if(igBegin("Menu", null, flags)) {
+
+            codeUI.render(frame);
+            memoryUI.render(frame);
+            portsUI.render(frame);
+            regsUI.render(frame);
+            screenUI.render(frame);
+
+            renderMenu(frame);
+        }
+        igEnd();
+
+        vk.imguiRenderEnd(frame);
     }
 }

@@ -1,7 +1,7 @@
 module emulator.machine.spectrum.widgets.ScreenUI;
 
-import vulkan.gui;
 import emulator.machine.spectrum.all;
+import vulkan.all;
 
 /**
  *  Display Spectrum screen
@@ -12,27 +12,36 @@ import emulator.machine.spectrum.all;
  *      Attribute data:
  *          - 32x24 bytes
  *
+ * | 4000 | 57ff | Screen Pixel Memory     | 6144 (0x1800) bytes
+ * | 5800 | 5aff | Screen attribute Memory | 768 (0x300) bytes
  */
-final class ScreenUI : Widget {
+final class ScreenUI {
 private:
-    RoundRectangles roundRectangles;
-    Set!UUID ids;
+    enum WIDTH  = 532;  // 256*2 = 512 + 20 = 532
+    enum HEIGHT = 404;  // 192*2 = 384 + 20 = 404
+    Spectrum spectrum;
+    Memory memory;
 public:
     this(Spectrum spectrum) {
-        this.ids = new Set!UUID;
+        this.spectrum = spectrum;
+        this.memory = spectrum.getMemory();
     }
-    override void destroy() {
+    void render(Frame frame) {
+        igSetNextWindowPos(ImVec2(10,30), ImGuiCond_Once, ImVec2(0.0, 0.0));
+        igSetNextWindowSize(ImVec2(WIDTH, HEIGHT), ImGuiCond_Once);
 
-    }
-    override void onAddedToStage(Stage stage) {
-        this.roundRectangles = stage.getRoundRectangles(layer);
+        auto windowFlags = ImGuiWindowFlags_None
+            | ImGuiWindowFlags_NoSavedSettings
+            //| ImGuiWindowFlags_NoTitleBar
+            //| ImGuiWindowFlags_NoCollapse
+            //| ImGuiWindowFlags_NoResize
+            //| ImGuiWindowFlags_NoMove;
+            ;
 
-        this.relPos = int2(5,5);
-        setSize(uint2(600, 430));
+        if(igBegin("Screen", null, windowFlags)) {
 
-        auto c = WHITE*0.4;
-        auto c2 = c+0.05;
-        this.ids.add(roundRectangles.add(relPos.to!float, size.to!float, c, c, c*0.75, c*0.75, 10))
-                .add(roundRectangles.add(relPos.to!float + 4, size.to!float-8, c2, c2, c2*0.75, c2*0.75, 10));
+
+        }
+        igEnd();
     }
 }

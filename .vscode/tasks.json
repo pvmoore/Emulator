@@ -30,6 +30,22 @@
             "problemMatcher": []
         },
         {
+            "label": "**** Emulator UI (release) ****",
+            "type": "shell",
+            "windows": {
+                "command": "run_release_build.bat ui"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "**** DEBUG ****",
             "type": "shell",
             "windows": {
