@@ -12,7 +12,7 @@ import emulator.machine.spectrum;
 import logging  : log, flushLog, setEagerFlushing;
 import vulkan.all;
 
-// Required for MessageBoxA
+// Required for MessageBoxA etc...
 pragma(lib, "user32.lib");
 
 extern(Windows)
@@ -25,6 +25,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int i
         setEagerFlushing(true);
 
 		auto speccy = new Spectrum();
+		speccy.reset();
 
         app = new SpectrumUI(speccy);
 

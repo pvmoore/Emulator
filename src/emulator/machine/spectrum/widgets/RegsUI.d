@@ -23,8 +23,11 @@ public:
 
         auto windowFlags = ImGuiWindowFlags_None
             | ImGuiWindowFlags_NoSavedSettings
+            | ImGuiWindowFlags_NoScrollWithMouse
+            | ImGuiWindowFlags_NoScrollbar
             //| ImGuiWindowFlags_NoTitleBar
             //| ImGuiWindowFlags_NoCollapse
+            //| ImGuiWindowFlags_NoBackground
             //| ImGuiWindowFlags_NoResize
             //| ImGuiWindowFlags_NoMove;
             ;
@@ -40,9 +43,6 @@ private:
     void regsTable() {
 
         igPushFont(context.vk.getImguiFont(1));
-
-        state.A = 255;
-        state.F = 129;
 
         reg8Table();
         igSameLine(0, 5);

@@ -10,25 +10,24 @@ import vulkan.all;
  */
 final class MemoryUI  {
 private:
-    enum WIDTH = 720, HEIGHT = 435;
+    enum WIDTH = 745, HEIGHT = 435;
     @Borrowed Spectrum spectrum;
     @Borrowed VulkanContext context;
     @Borrowed Memory memory;
+    @Borrowed Z80Ports ports;
     MemoryEditor ramEditor;
-    bool open = true;
+    MemoryEditor portsEditor;
 public:
 
     this(VulkanContext context, Spectrum spectrum) {
         this.context = context;
         this.spectrum = spectrum;
         this.memory = spectrum.getMemory();
-
-        import std;
-        foreach(i; 0..65536) {
-            spectrum.getMemory().write(i, (uniform01()*255.0).as!ubyte);
-        }
+        this.ports = spectrum.getPorts();
 
         this.ramEditor = new MemoryEditor()
+            .withFont(context.vk.getImguiFont(1));
+        this.portsEditor = new MemoryEditor()
             .withFont(context.vk.getImguiFont(1));
 
         ramEditor.ReadFn = (ptr, offset) {
@@ -36,10 +35,21 @@ public:
             memory.read(offset.as!uint, value);
             return value;
         };
+        portsEditor.ReadFn = (ptr, offset) {
+            ubyte value;
+            ports.read(offset.as!uint, value);
+            return value;
+        };
+
         ramEditor.WriteFn = (ptr, offset, value) {
             memory.write(offset.as!uint, value.as!ubyte);
         };
-        ramEditor.PreviewDataType = ImGuiDataType_U16;
+        portsEditor.WriteFn = (ptr, offset, value) {
+            ports.write(offset.as!uint, value.as!ubyte);
+        };
+
+        ramEditor.PreviewDataType = ImGuiDataType_U8;
+        portsEditor.PreviewDataType = ImGuiDataType_U8;
     }
     void render(Frame frame) {
 
@@ -51,13 +61,34 @@ public:
             //| ImGuiWindowFlags_NoTitleBar
             //| ImGuiWindowFlags_NoCollapse
             //| ImGuiWindowFlags_NoResize
+            //| ImGuiWindowFlags_NoBackground
             //| ImGuiWindowFlags_NoMove;
             ;
 
-        if(igBegin("RAM", &open, windowFlags)) {
+        if(igBegin("IO", null, windowFlags)) {
 
-            ramEditor.DrawContents(null, 65536, 0);
+            auto options = ImGuiTabItemFlags_None
+               // | ImGuiTabBarFlags_Reorderable
+                ;
 
+            if (igBeginTabBar("MyTabBar", options)) {
+
+                auto flags = ImGuiTabItemFlags_None;
+                    //ImGuiTabItemFlags_UnsavedDocument;
+                    //| ImGuiTabItemFlags_SetSelected;
+
+                if (igBeginTabItem("RAM", null, flags))
+                {
+                    ramEditor.DrawContents(null, 65536, 0);
+                    igEndTabItem();
+                }
+                if (igBeginTabItem("Ports", null, ImGuiTabItemFlags_None)) {
+                    portsEditor.DrawContents(null, 256, 0);
+                    igEndTabItem();
+                }
+
+                igEndTabBar();
+            }
 
         }
         igEnd();

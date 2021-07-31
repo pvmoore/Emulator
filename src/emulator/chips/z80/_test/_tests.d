@@ -3,6 +3,8 @@ module emulator.chips.z80._test._tests;
 import emulator.chips.z80.all;
 import std.string : lineSplitter, strip;
 
+pragma(lib, "user32.lib");
+
 __gshared Z80 cpu;
 __gshared Memory mem;
 __gshared Bus bus;
@@ -92,7 +94,14 @@ void setup() {
     pins = cpu.pins;
 }
 void executeCode(ubyte[] code, long count, bool dumpState = true) {
-    cpu.load(0x1000, code);
+    {
+        // Write code to the memory at address 0x1000
+        int addr = 0x1000;
+        foreach(i; 0..code.length.as!uint) {
+            bus.write(addr+i, code[i]);
+        }
+    }
+
     cpu.setPC(0x1000);
 
     foreach(i; 0..count) {

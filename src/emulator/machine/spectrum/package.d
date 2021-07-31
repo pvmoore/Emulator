@@ -11,7 +11,6 @@ import emulator.machine.spectrum.Z80Snapshot;
 
 import emulator.machine.spectrum.widgets.CodeUI;
 import emulator.machine.spectrum.widgets.MemoryUI;
-import emulator.machine.spectrum.widgets.PortsUI;
 import emulator.machine.spectrum.widgets.RegsUI;
 import emulator.machine.spectrum.widgets.ScreenUI;
 import emulator.machine.spectrum.widgets.SpectrumUI;

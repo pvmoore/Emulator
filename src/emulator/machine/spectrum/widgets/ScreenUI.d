@@ -27,7 +27,7 @@ public:
         this.memory = spectrum.getMemory();
     }
     void render(Frame frame) {
-        igSetNextWindowPos(ImVec2(10,30), ImGuiCond_Once, ImVec2(0.0, 0.0));
+        igSetNextWindowPos(ImVec2(10,35), ImGuiCond_Once, ImVec2(0.0, 0.0));
         igSetNextWindowSize(ImVec2(WIDTH, HEIGHT), ImGuiCond_Once);
 
         auto windowFlags = ImGuiWindowFlags_None
@@ -35,6 +35,7 @@ public:
             //| ImGuiWindowFlags_NoTitleBar
             //| ImGuiWindowFlags_NoCollapse
             //| ImGuiWindowFlags_NoResize
+            //| ImGuiWindowFlags_NoBackground
             //| ImGuiWindowFlags_NoMove;
             ;
 

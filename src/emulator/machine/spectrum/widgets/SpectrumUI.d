@@ -17,7 +17,6 @@ final class SpectrumUI : VulkanApplication {
     Spectrum spectrum;
     CodeUI codeUI;
     MemoryUI memoryUI;
-    PortsUI portsUI;
     RegsUI regsUI;
     ScreenUI screenUI;
 
@@ -161,7 +160,6 @@ private:
 
         this.codeUI = new CodeUI(spectrum);
         this.memoryUI = new MemoryUI(context, spectrum);
-        this.portsUI = new PortsUI(context, spectrum);
         this.regsUI = new RegsUI(context, spectrum);
         this.screenUI = new ScreenUI(spectrum);
 
@@ -196,30 +194,11 @@ private:
 
         style.ScrollbarSize = 24;
         style.ScrollbarRounding = 5;
-        style.GrabMinSize = 10;
-        style.ItemSpacing = ImVec2(5,0);
+        style.GrabMinSize = 20;
+        //style.ItemSpacing = ImVec2(5,0);
         style.WindowTitleAlign = ImVec2(0.0, 0.5);
 
         //style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(1,1,0,1);
-    }
-    void renderMenu(Frame frame) {
-        if(igBeginMenuBar()) {
-
-            if(igBeginMenu("File", true)) {
-                if(igMenuItem("Open..", "Ctrl+O")) {
-                    log("Open clicked");
-                }
-                if(igMenuItem("Save", "Ctrl+S", true)) {
-
-                }
-                if(igMenuItem("Exit", "Ctrl+X"))  {
-
-                }
-                igEndMenu();
-            }
-
-            igEndMenuBar();
-        }
     }
     void renderImguiWindows(Frame frame) {
         vk.imguiRenderStart(frame);
@@ -235,11 +214,12 @@ private:
             | ImGuiWindowFlags_NoBackground
             | ImGuiWindowFlags_MenuBar;
 
+        //igPushStyleColorVec4(ImGuiCol_WindowBg, ImVec4(0.4, 0.2, 0.4, 0.2));
+
         if(igBegin("Menu", null, flags)) {
 
             codeUI.render(frame);
             memoryUI.render(frame);
-            portsUI.render(frame);
             regsUI.render(frame);
             screenUI.render(frame);
 
@@ -247,6 +227,51 @@ private:
         }
         igEnd();
 
+        //igPopStyleColor(1);
+
         vk.imguiRenderEnd(frame);
+    }
+    void renderMenu(Frame frame) {
+        if(igBeginMenuBar()) {
+
+            if(igBeginMenu("File", true)) {
+                if(igMenuItem("Exit", "Ctrl+X"))  {
+
+                }
+                igEndMenu();
+            }
+
+            if(igBeginMenu("Machine", true)) {
+                if(igMenuItem("Reset")) {
+                    spectrum.reset();
+                }
+                igSeparator();
+                if(igMenuItem("Load 48K ROM")) {
+                    spectrum.loadROM48K();
+                }
+                if(igMenuItem("Load Tape")) {
+                    // TODO - File dialog
+                    spectrum.loadTape("");
+                }
+                if(igMenuItem("Load Snapshot")) {
+                    // TODO - File dialog
+                }
+                igSeparator();
+                if(igMenuItem("Save Snapshot")) {
+                    // TODO - File dialog
+                }
+
+                igEndMenu();
+            }
+
+            if(igBeginMenu("Help", true)) {
+                if(igMenuItem("About", "Alt+A")) {
+
+                }
+                igEndMenu();
+            }
+
+            igEndMenuBar();
+        }
     }
 }

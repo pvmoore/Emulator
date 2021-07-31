@@ -20,11 +20,6 @@ public:
     void reset() {
         state.reset();
     }
-    void load(ushort addr, ubyte[] bytes) {
-        foreach(i; 0..bytes.length.as!uint) {
-            bus.write(addr+i, bytes[i]);
-        }
-    }
     void setPC(ushort addr) {
         state.PC = addr;
     }

@@ -16,7 +16,7 @@ final class Disassembler {
 
         while(offset < code.length.as!int) {
             log("%s %s", offset, code.length.as!int);
-            lines ~= Line(pc);
+            lines ~= Line.atAddress(pc);
             auto line = &lines[$-1];
             decoding.reset();
 
@@ -59,7 +59,7 @@ final class Disassembler {
     }
 private:
     void log(A...)(string fmt, A args) {
-        if(false)
+        static if(false)
             format(fmt, args);
     }
     bool littleEndian;

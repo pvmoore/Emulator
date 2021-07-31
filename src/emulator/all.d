@@ -7,6 +7,7 @@ import std.stdio    : writef, writefln;
 import std.format   : format;
 
 import common;
+import logging;
 
 import emulator.Bus;
 import emulator.Memory;
