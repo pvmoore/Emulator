@@ -14,7 +14,9 @@ private:
     @Borrowed Spectrum spectrum;
     @Borrowed VulkanContext context;
     @Borrowed Memory memory;
+    @Borrowed Z80 cpu;
     @Borrowed Z80Ports ports;
+    @Borrowed Z80Pins pins;
     MemoryEditor ramEditor;
     MemoryEditor portsEditor;
 public:
@@ -22,8 +24,10 @@ public:
     this(VulkanContext context, Spectrum spectrum) {
         this.context = context;
         this.spectrum = spectrum;
+        this.cpu = spectrum.getCpu();
         this.memory = spectrum.getMemory();
         this.ports = spectrum.getPorts();
+        this.pins = cpu.pins;
 
         this.ramEditor = new MemoryEditor()
             .withFont(context.vk.getImguiFont(1));
@@ -36,8 +40,10 @@ public:
             return value;
         };
         portsEditor.ReadFn = (ptr, offset) {
+            pins.setIOReq(true);
             ubyte value;
             ports.read(offset.as!uint, value);
+            pins.setIOReq(false);
             return value;
         };
 

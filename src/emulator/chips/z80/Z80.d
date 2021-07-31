@@ -1,5 +1,6 @@
 module emulator.chips.z80.Z80;
 
+import emulator.all;
 import emulator.chips.z80.all;
 
 final class Z80 {
