@@ -225,7 +225,12 @@ private:
         }
         foreach(k,v; labelToAddress) {
             absExprParser.addReference(k, v);
-            relExprParser.addReference(k, ["(", v.to!string, "-", "$", ")"]);
+            relExprParser.addReference(k, ["(", v.to!string, "-", "$$", ")"]);
+        }
+
+        // If there are no fixups, run the abs parser anyway to resolve the constants etc.
+        if(fixups.length==0) {
+            absExprParser.parse(["0"]);
         }
 
         foreach(f; fixups) {
@@ -234,8 +239,12 @@ private:
             auto byteIndex = f.byteIndex;
             try{
 
-                absExprParser.addReference("$", f.address);
-                relExprParser.addReference("$", f.address);
+                // Current instruction address
+                absExprParser.addMutableReference("$", f.address);
+                relExprParser.addMutableReference("$", -line.code.length.as!int);
+
+                // Next instruction address
+                relExprParser.addMutableReference("$$", f.address+line.code.length.as!int);
 
                 auto tokens = convertNumbersToInt(f.expressionTokens);
 

@@ -127,7 +127,7 @@ here:   inc a       ; 0x0006
 here:   inc a       ; 0x0005
     ");
     assert(lines.length == 4);
-    assert(lines[1].code == [0x18, 0x03], "%s".format(lines[1].code));
+    assert(lines[1].code == [0x18, 0x01], "%s".format(lines[1].code));
 
     //-------------------------------------------
     assembler.reset();
@@ -138,7 +138,7 @@ here:   inc a       ; 0x0005
 here:   inc a       ; 0x0005
     ");
     assert(lines.length == 4);
-    assert(lines[1].code == [0x10, 0x03], "%s".format(lines[1].code));
+    assert(lines[1].code == [0x10, 0x01], "%s".format(lines[1].code));
 
     //------------------------------------------
     assembler.reset();
@@ -146,6 +146,23 @@ here:   inc a       ; 0x0005
 label1:push af
     ");
     assert(lines.length==1);
+
+    //------------------------------------------
+    assembler.reset();
+    lines = assembler.encode("
+        nop         ; 0x0000
+        jr z, $     ; 0x0001 (relative from address after the jump instruction)
+        nop         ; 0x0003
+        jp $        ; 0x0004
+        nop         ; 0x0007
+        jr labelz    ; 0x0008 (relative from 0x100a)
+        nop         ; 0x000a
+labelz:  nop         ; 0x000b
+    ");
+    assert(lines.length==8);
+    assert(lines[1].code == [0x28, 0xfe], "%s".format(lines[1].code));
+    assert(lines[3].code == [0xc3, 0x04, 0x00]);
+    assert(lines[5].code == [0x18, 0x01], "%s".format(lines[5].code));
 }
 void immediateLiterals() {
     assembler.reset();
