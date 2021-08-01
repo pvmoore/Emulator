@@ -40,10 +40,8 @@ public:
             return value;
         };
         portsEditor.ReadFn = (ptr, offset) {
-            pins.setIOReq(true);
             ubyte value;
             ports.read(offset.as!uint, value);
-            pins.setIOReq(false);
             return value;
         };
 
@@ -89,7 +87,9 @@ public:
                     igEndTabItem();
                 }
                 if (igBeginTabItem("Ports", null, ImGuiTabItemFlags_None)) {
+                    pins.setIOReq(true);
                     portsEditor.DrawContents(null, 256, 0);
+                    pins.setIOReq(false);
                     igEndTabItem();
                 }
 

@@ -14,20 +14,21 @@ void jr() {
 
     state.A = 0x00;
     test("
-        jr $03  ; pc = 0x1000
+        jr $01  ; pc = 0x1000
         inc a   ; pc = 0x1002
         inc a   ; pc = 0x1003
-    ", [0x18, 0x03,
+    ", [0x18, 0x01,
         INC_A, INC_A]);
 
     assertFlagsClear(allFlags());
     assert(state.A == 0x01, "%s".format(state.A));
 
     test("
-        nop
-        nop
-        jr $fe
-    ", [0x00, 0x00, 0x18, 0xfe]);
+        nop     ; pc = 0x1000
+        nop     ; pc = 0x1001
+        jr $fc  ; pc = 0x1002 (fc = -4)
+                ; pc = 0x1004
+    ", [0x00, 0x00, 0x18, 0xfc]);
 
     assertFlagsClear(allFlags());
     assert(state.PC == 0x1000);
@@ -38,10 +39,10 @@ void jr() {
     state.flagZ(true);
 
     test("
-        jr z, $03   ; 0x1000
+        jr z, $01   ; 0x1000
         inc a       ; 0x1002
         inc a       ; 0x1003
-    ", [0x28, 0x03,
+    ", [0x28, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x01);
@@ -50,10 +51,10 @@ void jr() {
     state.flagZ(false);
 
     test("
-        jr z, $03   ; 0x1000
+        jr z, $01   ; 0x1000
         inc a       ; 0x1002
         inc a       ; 0x1003
-    ", [0x28, 0x03,
+    ", [0x28, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x02);
@@ -64,10 +65,10 @@ void jr() {
     state.flagZ(true);
 
     test("
-        jr nz, $03
+        jr nz, $01
         inc a
         inc a
-    ", [0x20, 0x03,
+    ", [0x20, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x02);
@@ -76,10 +77,10 @@ void jr() {
     state.flagZ(false);
 
     test("
-        jr nz, $03
-        inc a
-        inc a
-    ", [0x20, 0x03,
+        jr nz, $01  ; pc = 0x1000 (branch taken)
+        inc a       ; pc = 0x1002 (skipped)
+        inc a       ; pc = 0x1003
+    ", [0x20, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x01);
@@ -90,10 +91,10 @@ void jr() {
     state.flagC(true);
 
     test("
-        jr c, $03
-        inc a
-        inc a
-    ", [0x38, 0x03,
+        jr c, $01  ; pc = 0x1000 (branch taken)
+        inc a      ; pc = 0x1002 (skipped)
+        inc a      ; pc = 0x1003
+    ", [0x38, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x01);
@@ -102,10 +103,10 @@ void jr() {
     state.flagC(false);
 
     test("
-        jr c, $03
+        jr c, $01 ; pc = 0x1000 (branch not taken)
         inc a
         inc a
-    ", [0x38, 0x03,
+    ", [0x38, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x02);
@@ -128,10 +129,10 @@ void jr() {
     state.flagC(false);
 
     test("
-        jr nc, $03
-        inc a
-        inc a
-    ", [0x30, 0x03,
+        jr nc, $01  ; pc = 0x1000 (branch taken)
+        inc a       ; pc = 0x1002 (skipped)
+        inc a       ; pc = 0x1003
+    ", [0x30, 0x01,
         INC_A, INC_A]);
 
     assert(state.A == 0x01);
@@ -459,7 +460,7 @@ void djnz() {
     state.B = 0x01;
 
     test("
-        djnz $03    ; pc = 0x1000
+        djnz $03    ; pc = 0x1000 (branch not taken)
         inc a       ; pc = 0x1002
         inc a       ; pc = 0x1003
         nop         ; pc = 0x1004
@@ -475,11 +476,11 @@ void djnz() {
     state.B = 0x02;
 
     test("
-        djnz $03    ; pc = 0x1000
+        djnz $01    ; pc = 0x1000 (branch taken)
         inc a       ; pc = 0x1002
         inc a       ; pc = 0x1003
         nop         ; pc = 0x1004
-    ", [0x10, 0x03,
+    ", [0x10, 0x01,
         INC_A,
         INC_A,
         0x00]);

@@ -33,3 +33,17 @@ https://skoolkid.github.io/rom/
 
 http://www.retro8bitcomputers.co.uk/Content/downloads/books/SpectrumMachineLanguageForTheAbsoluteBeginner.pdf
 
+## Interrupts
+
+http://www.breakintoprogram.co.uk/computers/zx-spectrum/interrupts
+
+IM 0 - Not used on Spectrum
+IM 1 - Triggers 50 times a second - during vertical refresh - Jumps to address 0x0038
+       Mainly used for scanning the keyboard
+IM 2 - Interrupt vector table
+
+Spectrum normally uses IM 1.
+
+IM 2 - Triggers 50 times a second on vertical blank.
+       128 word vector table (on a page - 256 byte - boundary). This table is located at (I<<8)
+       ie. I = 0x20, table is at 0x2000

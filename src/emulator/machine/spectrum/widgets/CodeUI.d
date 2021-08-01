@@ -19,6 +19,7 @@ private:
     Set!string regs;
     char[5] selectAddress = "0\0\0\0\0";
     uint _scrollToLine = uint.max;
+    string[uint] comments;
 public:
     this(Spectrum spectrum) {
         this.spectrum = spectrum;
@@ -31,6 +32,8 @@ public:
             "bc", "de", "hl", "ix", "iy",
             "ixh", "ixl", "iyh", "iyl"
         ]);
+        this.comments[0x0066] = "NMI jump target address";
+        this.comments[0x11cb] = "Start New";
         refresh(0, 0x4000);
     }
     /**
@@ -125,13 +128,18 @@ private:
         if(igButton("To Addr", ImVec2(0,0))) {
             scrollToAddress(fromStringz(selectAddress.ptr).to!uint(16));
         }
+
+        igSameLine(0, 20);
+        if(igButton("To PC", ImVec2(0,0))) {
+            scrollToAddress(state.PC);
+        }
     }
     void renderTable() {
         const flags = ImGuiTableFlags_None
             | ImGuiTableFlags_Borders
             | ImGuiTableFlags_RowBg;
 
-        const numCols = 3;
+        const numCols = 4;
         const outerSize = ImVec2(0,0);
         const innerWidth = 0f;
 
@@ -139,7 +147,8 @@ private:
 
             igTableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, 60.0f, 0);
             igTableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed, 150.0f, 0);
-            igTableSetupColumn("Instructions", ImGuiTableColumnFlags_WidthStretch, 0, 0);
+            igTableSetupColumn("Instructions", ImGuiTableColumnFlags_WidthFixed, 150, 0);
+            igTableSetupColumn("Comments", ImGuiTableColumnFlags_WidthStretch, 0, 0);
 
             auto numLines = lines.length.as!uint;
             float lineHeight = igGetTextLineHeightWithSpacing();
@@ -197,6 +206,9 @@ private:
 
         igTableSetColumnIndex(2);
         renderInstructions(lines[line].tokens);
+
+        igTableSetColumnIndex(3);
+        renderComment(lines[line].address);
     }
     void renderInstructions(string[] tokens) {
         string prev = "";
@@ -224,5 +236,10 @@ private:
 
             prev = t;
         }
+    }
+    void renderComment(uint address) {
+        auto ptr = address in comments;
+        auto s = ptr ? *ptr : "";
+        igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(s));
     }
 }

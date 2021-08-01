@@ -968,7 +968,7 @@ final class JRe : Strategy {
 
         }
         if(taken) {
-            s.PC = ((s.PC-2).as!short + e).as!ushort;
+            s.PC = ((s.PC).as!short + e).as!ushort;
         }
     }
 }

@@ -83,10 +83,38 @@ void loadAsm() {
     auto assembler = createZ80Assembler();
 
     auto lines = assembler.encode(src);
+    auto code = extractCode(lines);
 
     foreach(l; lines) {
         writefln("%s", l);
     }
+
+static if(false) {
+
+    // This won't work. needs rom to be loaded. try running in the UI
+
+    auto cpu = new Z80();
+    auto ports = new Z80Ports(cpu.pins);
+    auto mem = new Memory(65536);
+    auto bus = new Bus().add(ports).add(mem);
+
+    cpu.addBus(bus);
+
+    // Write code to the memory at address 0x8000
+    int addr = 0x8000;
+    foreach(i; 0..code.length.as!uint) {
+        bus.write(addr+i, code[i]);
+    }
+
+    cpu.setPC(0x8000);
+
+    foreach(i; 0..100) {
+        auto instr = cpu.execute();
+
+        writefln("%s", .toString(instr.tokens));
+        writefln("%s", cpu.state);
+    }
+}
 }
 void decode() {
     ubyte[] bytes = [243,221,33,0,176,17,17,0,62,0,55,205,86,5,221,33,0,64,17,88,27,62,255,55,205,86,5,195,4,91];
