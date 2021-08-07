@@ -5,7 +5,7 @@ import vulkan.all;
 
 final class RegsUI {
 private:
-    enum WIDTH = 620, HEIGHT = 435;
+    enum WIDTH = 620, HEIGHT = 430;
     @Borrowed VulkanContext context;
     @Borrowed Spectrum spectrum;
     @Borrowed Z80 cpu;

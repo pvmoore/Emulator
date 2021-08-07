@@ -5,8 +5,9 @@ import emulator.all;
 final class Z80Ports : BusComponent {
 private:
     Z80Pins pins;
-    ubyte[256] data;
 public:
+    ubyte[256] data;
+
     this(Z80Pins pins) {
         this.pins = pins;
     }

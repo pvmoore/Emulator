@@ -20,6 +20,9 @@ private:
     char[5] selectAddress = "0\0\0\0\0";
     uint _scrollToLine = uint.max;
     string[uint] comments;
+    string[uint] labels;
+    Set!uint breakpointLines;
+    int maxRunInstructions = 0;
 public:
     this(Spectrum spectrum) {
         this.spectrum = spectrum;
@@ -27,13 +30,15 @@ public:
         this.state = cpu.state;
         this.disasm = createZ80Disassembler();
         this.regs = new Set!string;
+        this.breakpointLines = new Set!uint;
         this.regs.add([
             "a", "b", "c", "d", "e", "f", "h", "l", "i", "r",
             "bc", "de", "hl", "ix", "iy",
             "ixh", "ixl", "iyh", "iyl"
         ]);
-        this.comments[0x0066] = "NMI jump target address";
-        this.comments[0x11cb] = "Start New";
+        addROMComments();
+        addLabels();
+
         refresh(0, 0x4000);
     }
     /**
@@ -52,6 +57,7 @@ public:
 
         scrollToAddress(fromAddr);
 
+        addBreakpoints();
     }
     void scrollToAddress(uint addr) {
         // Calculate line for this address - a bit inefficient but not called often
@@ -103,18 +109,15 @@ public:
         igEnd();
     }
 private:
+    void addBreakpointAtAddress(uint addr) {
+        foreach(i, line; lines) {
+            if(line.address == addr) {
+                breakpointLines.add(i.as!uint);
+            }
+        }
+    }
     void renderButtons() {
-        if(igButton("Step", ImVec2(0,0))) {
-            cpu.execute();
-            scrollToAddress(state.PC);
-        }
 
-        igSameLine(0,20);
-        if(igButton("Run", ImVec2(0,0))) {
-            // TODO
-        }
-
-        igSameLine(0,20);
         igPushItemWidth(60);
         if(igInputText("", selectAddress.ptr, selectAddress.length.as!int,
                         ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue,
@@ -129,9 +132,55 @@ private:
             scrollToAddress(fromStringz(selectAddress.ptr).to!uint(16));
         }
 
-        igSameLine(0, 20);
+        igSameLine(0, 5);
         if(igButton("To PC", ImVec2(0,0))) {
             scrollToAddress(state.PC);
+        }
+
+        igSameLine(0,20);
+        igSeparatorEx(ImGuiSeparatorFlags_Vertical);
+
+        igSameLine(0,20);
+        igPushButtonRepeat(true);
+        if(igButton("Step", ImVec2(0,0))) {
+
+            spectrum.execute(null, 1, null, () {
+                scrollToAddress(state.PC);
+            });
+        }
+        igPopButtonRepeat();
+
+        igSameLine(0,40);
+        igSetNextItemWidth(75);
+        igPushIDInt(3);
+        igDragInt("", &maxRunInstructions, 0.2, 1, 100, "%d", ImGuiSliderFlags_Logarithmic);
+        igPopID();
+
+        igSameLine(0,5);
+        if(igButton("Run", ImVec2(0,0))) {
+
+            auto breakpointAddresses = new Set!uint;
+            foreach(l; breakpointLines.values()) {
+                auto addr = lines[l].address;
+                breakpointAddresses.add(addr);
+            }
+
+            spectrum.execute(breakpointAddresses, maxRunInstructions, () {
+                scrollToAddress(state.PC);
+            }, null);
+        }
+
+        igSameLine(0,5);
+        if(igButton("Run Fast", ImVec2(0,0))) {
+            auto breakpointAddresses = new Set!uint;
+            foreach(l; breakpointLines.values()) {
+                auto addr = lines[l].address;
+                breakpointAddresses.add(addr);
+            }
+
+            spectrum.execute(breakpointAddresses, maxRunInstructions, null, () {
+                scrollToAddress(state.PC);
+            });
         }
     }
     void renderTable() {
@@ -145,7 +194,7 @@ private:
 
         if(igBeginTableEx("codeTable", 2, numCols, flags, outerSize, innerWidth)) {
 
-            igTableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, 60.0f, 0);
+            igTableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed, 170.0f, 0);
             igTableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed, 150.0f, 0);
             igTableSetupColumn("Instructions", ImGuiTableColumnFlags_WidthFixed, 150, 0);
             igTableSetupColumn("Comments", ImGuiTableColumnFlags_WidthStretch, 0, 0);
@@ -167,16 +216,7 @@ private:
 
                 auto currentLine = state.PC == lines[line].address;
 
-                // if(currentLine) {
-                //     igPushStyleColorVec4(ImGuiCol_TableRowBg, ImVec4(1,1, 0.5, 1));
-                //     igPushStyleColorVec4(ImGuiCol_TableRowBgAlt, ImVec4(1,1, 0.5, 1));
-                // }
-
                 renderRow(line, currentLine);
-
-                // if(currentLine) {
-                //     igPopStyleColor(2);
-                // }
             }
 
             ImGuiListClipper_End(&clipper);
@@ -185,7 +225,6 @@ private:
         }
     }
     void renderRow(int line, bool highlightRow) {
-        auto addr = "%04X".format(lines[line].address);
         auto bytes = lines[line].code.map!(it=>"%02X".format(it)).join(" ");
 
         igTableNextRow(ImGuiTableRowFlags_None, 10);
@@ -196,10 +235,21 @@ private:
     //     ImGuiTableBgTarget_RowBg1 = 2,
     //     ImGuiTableBgTarget_CellBg = 3,
             igTableSetBgColor(ImGuiTableBgTarget_RowBg0, 0x6000ff00, -1);
+
+        } else if(breakpointLines.contains(line)) {
+            igTableSetBgColor(ImGuiTableBgTarget_RowBg1, 0x600000ff, -1);
         }
 
-        igTableSetColumnIndex(0);
-        igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(addr));
+        renderAddressAndLabel(line);
+
+        if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked(0, false)) {
+            log("select line %s", line);
+            if(breakpointLines.contains(line)) {
+                breakpointLines.remove(line);
+            } else {
+                breakpointLines.add(line);
+            }
+        }
 
         igTableSetColumnIndex(1);
         igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(bytes));
@@ -209,6 +259,17 @@ private:
 
         igTableSetColumnIndex(3);
         renderComment(lines[line].address);
+    }
+    void renderAddressAndLabel(int line) {
+        auto address = lines[line].address;
+        auto addrStr = "%04X".format(address);
+        igTableSetColumnIndex(0);
+        igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(addrStr));
+        auto p = address in labels;
+        if(p) {
+            igSameLine(0,8);
+            igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(*p ~ ":"));
+        }
     }
     void renderInstructions(string[] tokens) {
         string prev = "";
@@ -241,5 +302,20 @@ private:
         auto ptr = address in comments;
         auto s = ptr ? *ptr : "";
         igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(s));
+    }
+    void addLabels() {
+        // labels from https://skoolkid.github.io/rom/asm
+        this.labels[0x11b7] = "NEW";
+        this.labels[0x11cb] = "START_NEW";
+        this.labels[0x11dc] = "RAM_FILL";
+        this.labels[0x11e2] = "RAM_READ";
+        this.labels[0x11ef] = "RAM_DONE";
+        this.labels[0x1219] = "RAM_SET";
+    }
+    void addROMComments() {
+        this.comments[0x0066] = "NMI jump target address";
+    }
+    void addBreakpoints() {
+        addBreakpointAtAddress(0x11ef);
     }
 }

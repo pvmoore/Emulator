@@ -606,7 +606,7 @@ final class LDDR : Strategy {
         s.DE = (s.DE-1).as!ushort;
         s.BC = (s.BC-1).as!ushort;
 
-        if(s.BC==0) {
+        if(s.BC!=0) {
             // 21 clocks
             s.PC = (s.PC - 2).as!ushort;
         } else {

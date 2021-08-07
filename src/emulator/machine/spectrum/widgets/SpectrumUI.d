@@ -71,6 +71,8 @@ final class SpectrumUI : VulkanApplication {
             if(context) context.dumpMemory();
 
             if(fps) fps.destroy();
+            if(screenUI) screenUI.destroy();
+
             if(renderPass) device.destroyRenderPass(renderPass);
             if(context) context.destroy();
 	    }
@@ -89,6 +91,7 @@ final class SpectrumUI : VulkanApplication {
     }
     void update(Frame frame) {
         fps.beforeRenderPass(frame, vk.getFPS);
+        screenUI.update(frame);
     }
     override void render(Frame frame) {
         auto res = frame.resource;
@@ -161,7 +164,7 @@ private:
         this.codeUI = new CodeUI(spectrum);
         this.memoryUI = new MemoryUI(context, spectrum);
         this.regsUI = new RegsUI(context, spectrum);
-        this.screenUI = new ScreenUI(spectrum);
+        this.screenUI = new ScreenUI(context, spectrum);
 
         initImguiStyle();
     }
@@ -195,6 +198,7 @@ private:
         style.ScrollbarSize = 24;
         style.ScrollbarRounding = 5;
         style.GrabMinSize = 20;
+        //style.FramePadding = ImVec2(10,10);
         //style.ItemSpacing = ImVec2(5,0);
         style.WindowTitleAlign = ImVec2(0.0, 0.5);
 

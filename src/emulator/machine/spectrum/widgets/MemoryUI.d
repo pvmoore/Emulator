@@ -10,7 +10,7 @@ import vulkan.all;
  */
 final class MemoryUI  {
 private:
-    enum WIDTH = 745, HEIGHT = 435;
+    enum WIDTH = 745, HEIGHT = 430;
     @Borrowed Spectrum spectrum;
     @Borrowed VulkanContext context;
     @Borrowed Memory memory;

@@ -47,3 +47,20 @@ Spectrum normally uses IM 1.
 IM 2 - Triggers 50 times a second on vertical blank.
        128 word vector table (on a page - 256 byte - boundary). This table is located at (I<<8)
        ie. I = 0x20, table is at 0x2000
+
+## Ports
+
+https://worldofspectrum.org/faq/reference/48kreference.htm#PortFE
+
+### 0xfe is the ULA port
+
+Write:
+
+- Bits 0,1,2  = border colour
+- Bit  3      = MIC
+- Bit  4      = EAR
+
+Read:
+
+- 0xfefe SHIFT,Z,X,C,V keys (bits 0-4)
+etc...

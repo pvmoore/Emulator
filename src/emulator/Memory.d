@@ -6,9 +6,9 @@ import emulator.all;
  *  Little-endian Memory
  */
 final class Memory : BusComponent {
-private:
-    ubyte[] data;
 public:
+    ubyte[] data;
+
     this(int numBytes) {
         this.data.length = numBytes;
     }

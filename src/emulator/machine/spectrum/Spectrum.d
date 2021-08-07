@@ -11,6 +11,8 @@ private:
     Z80Ports ports;
     Z80Pins pins;
     Bus bus;
+    bool running = true;
+    Semaphore executeSemaphore;
 public:
     auto getCpu()    { return cpu; }
     auto getMemory() { return memory; }
@@ -23,12 +25,23 @@ public:
 
         this.ports = new Z80Ports(cpu.pins);
         this.memory = new Memory(65536);
-        
+
         this.bus = new Bus()
             .add(ports)
             .add(memory);
 
         cpu.addBus(bus);
+
+        this.executeSemaphore = new Semaphore();
+
+        auto thread = new Thread(&run);
+        thread.isDaemon(true);
+        thread.name("Spectrum Executor");
+        thread.start();
+    }
+    void destroy() {
+        this.running = false;
+        executeSemaphore.notify();
     }
 
     void reset() {
@@ -58,6 +71,62 @@ public:
             bus.write(addr+i, data[i]);
         }
     }
+    /**
+     * Execute instructions until maxInstructions or
+     * one of the specified breakpoints is reached.
+     */
+    void execute(Set!uint breakPoints,
+                 int maxInstructions,
+                 void delegate() afterInstruction,
+                 void delegate() afterExecute)
+    {
+        this.breakPoints = breakPoints;
+        this.maxInstructionsToExecute = maxInstructions;
+        this.afterInstruction = afterInstruction;
+        this.afterExecute = afterExecute;
+        executeSemaphore.notify();
+    }
+    bool isExecuting() {
+        return running && atomicLoad(_isExecuting);
+    }
 private:
+    void delegate() afterInstruction;
+    void delegate() afterExecute;
+    Set!uint breakPoints;
+    uint maxInstructionsToExecute;
+    uint numInstructionsExecuted;
+    bool _isExecuting;
 
+    void run() {
+        this.log("Execute thread running");
+        while(running) {
+            this.log("Waiting on execute Semaphore");
+            executeSemaphore.wait();
+            if(!running) break;
+            this.log("Executing %s instructions", maxInstructionsToExecute);
+
+            atomicStore(_isExecuting, true);
+            numInstructionsExecuted = 0;
+
+            while(maxInstructionsToExecute == 0 ||
+                 numInstructionsExecuted < maxInstructionsToExecute)
+            {
+
+                cpu.execute();
+                numInstructionsExecuted++;
+
+                if(afterInstruction) {
+                    afterInstruction();
+                }
+
+                if(breakPoints && breakPoints.contains(cpu.state.PC)) {
+                    this.log("Hit breakpoint @ address %04x", cpu.state.PC);
+                    break;
+                }
+            }
+            if(afterExecute) afterExecute();
+            atomicStore(_isExecuting, false);
+        }
+        this.log("Execute thread existing");
+    }
 }
