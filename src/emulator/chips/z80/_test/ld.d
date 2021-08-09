@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     LD_A_R = [0xed, 0x5f],
@@ -843,6 +844,8 @@ void ld_rr_rr() {
     assert(state.SP == 0x1234);
 }
 
+writefln("ldtests");
+
 setup();
 
 ld_imm();
@@ -856,4 +859,5 @@ ld_nn_rr();
 ld_rr_nn();
 ld_rr_rr();
 
-} //unittest
+} // static if
+} // unittest

@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 void res() {
     cpu.reset();
@@ -49,26 +50,26 @@ void res() {
 
 
         state.IX = 0x0000;
-        test("\tres %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tres %s, (ix+$00)".format(BIT), [0xdd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assert(bus.read(0x0000) == expected);
         assertFlagsClear(allFlags());
 
         state.IX = 0x0001;
-        test("\tres %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tres %s, (ix+$00)".format(BIT), [0xdd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assert(bus.read(0x0001) == 0x00);
         assertFlagsClear(allFlags());
 
 
         state.IY = 0x0000;
-        test("\tres %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tres %s, (iy+$00)".format(BIT), [0xfd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assert(bus.read(0x0000) == expected);
         assertFlagsClear(allFlags());
 
         state.IY = 0x0001;
-        test("\tres %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tres %s, (iy+$00)".format(BIT), [0xfd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assert(bus.read(0x0001) == 0x00);
         assertFlagsClear(allFlags());
@@ -76,8 +77,11 @@ void res() {
     }
 }
 
+writefln("res tests");
+
 setup();
 
 res();
 
+} // static if
 } // unittest

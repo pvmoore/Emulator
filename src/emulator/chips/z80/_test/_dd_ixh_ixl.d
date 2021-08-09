@@ -5,6 +5,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     INC_IXH = [0xdd, 0x24],     // inc h
@@ -403,6 +404,8 @@ void cp() {
     state.A = 0x10; test("\tcp a, iyl", CP_A_IYL); assert(state.A == 0x10);
 }
 
+writefln("dd ixh ixl iyh iyl tests");
+
 setup();
 
 inc();
@@ -418,4 +421,5 @@ xor();
 or();
 cp();
 
-} //unit test
+} // static if
+} // unit test

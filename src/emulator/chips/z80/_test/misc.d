@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     DI = 0xf3,
@@ -355,6 +356,8 @@ void im() {
     assert(state.IM == 2);
 }
 
+writefln("misc tests");
+
 setup();
 
 nop();
@@ -371,4 +374,5 @@ rld();
 rrd();
 im();
 
+} // static if
 } // unittest

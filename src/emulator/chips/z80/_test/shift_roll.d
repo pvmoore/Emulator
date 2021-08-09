@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 void rla() {
     cpu.reset();
@@ -113,6 +114,8 @@ void rrca() {
 
 }
 
+writefln("shift roll tests");
+
 setup();
 
 rla();
@@ -120,4 +123,5 @@ rra();
 rlca();
 rrca();
 
+} // static if
 } // unittest

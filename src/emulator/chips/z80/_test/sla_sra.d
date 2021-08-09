@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     SLA_A = [0xcb, 0x27],
@@ -14,8 +15,6 @@ enum {
     SLA_H = [0xcb, 0x24],
     SLA_L = [0xcb, 0x25],
     SLA_HL = [0xcb, 0x26],
-    SLA_IX = [0xdd, 0xcb, 0x26],
-    SLA_IY = [0xfd, 0xcb, 0x26],
 
     SRA_A = [0xcb, 0x2f],
     SRA_B = [0xcb, 0x28],
@@ -25,8 +24,6 @@ enum {
     SRA_H = [0xcb, 0x2c],
     SRA_L = [0xcb, 0x2d],
     SRA_HL = [0xcb, 0x2e],
-    SRA_IX = [0xdd, 0xcb, 0x2e],
-    SRA_IY = [0xfd, 0xcb, 0x2e],
 }
 void sla() {
     cpu.reset();
@@ -127,7 +124,7 @@ void sla() {
     writeBytes((0x0001), [0b1111_0000]);
     test("
         sla (ix+$01)
-    ", SLA_IX ~ [0x01]);
+    ", [0xdd, 0xcb, 0x01, 0x26]);
 
     assert(bus.read(0x0001) == 0b1110_0000);
     assertFlagsSet(C, S);
@@ -138,7 +135,7 @@ void sla() {
     writeBytes((0x0001), [0b1111_0000]);
     test("
         sla (iy+$01)
-    ", SLA_IY ~ [0x01]);
+    ", [0xfd, 0xcb, 0x01, 0x26]);
 
     assert(bus.read(0x0001) == 0b1110_0000);
     assertFlagsSet(C, S);
@@ -253,7 +250,7 @@ void sra() {
     writeBytes(0x0001, [0b1000_1111]);
     test("
         sra (ix+$01)
-    ", SRA_IX ~ [0x01]);
+    ", [0xdd, 0xcb, 0x01, 0x2e]);
 
     assert(bus.read(0x0001) == 0b1100_0111);
     assertFlagsSet(C, S);
@@ -265,16 +262,19 @@ void sra() {
     writeBytes(0x0001, [0b1000_1111]);
     test("
         sra (iy+$01)
-    ", SRA_IY ~ [0x01]);
+    ", [0xfd, 0xcb, 0x01, 0x2e]);
 
     assert(bus.read(0x0001) == 0b1100_0111);
     assertFlagsSet(C, S);
     assertFlagsClear(H, N, Z);
 }
 
+writefln("sla sra tests");
+
 setup();
 
 sla();
 sra();
 
+} // static if
 } // unitest

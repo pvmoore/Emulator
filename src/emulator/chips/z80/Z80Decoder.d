@@ -16,6 +16,7 @@ final class Z80Decoder : Decoder {
         auto a = code[0];
         const(Instruction)* instr;
         int numBytes = 1;
+        bool decLiteralIndex = false;
 
         switch(a) {
             case 0xCB: {
@@ -33,7 +34,12 @@ final class Z80Decoder : Decoder {
                     if(b==0xcb) {
                         if(code.length > 2) {
                             numBytes++;
-                            b = code[2];
+
+                            // displacement comes next
+                            auto dis = code[2];
+                            decLiteralIndex = true;
+
+                            b = code[3];
                             instr = &groupDDCB[b];
                         }
                     } else {
@@ -57,7 +63,12 @@ final class Z80Decoder : Decoder {
                     if(b==0xcb) {
                         if(code.length > 2) {
                             numBytes++;
-                            b = code[2];
+
+                            // displacement comes next
+                            auto dis = code[2];
+                            decLiteralIndex = true;
+
+                            b = code[3];
                             instr = &groupFDCB[b];
                         }
                     } else {
@@ -77,7 +88,15 @@ final class Z80Decoder : Decoder {
 
             dec.numLiteralBytes = numLiteralBytes;
             dec.numBytes = numBytes + numLiteralBytes;
+            dec.literalBytesIndex = numBytes;
             dec.tokens = instr.tokens.dup;
+
+            if(decLiteralIndex) {
+                // ddcb and fdcb instructions have displacement which is not at the end
+                dec.literalBytesIndex--;
+            }
+
+            //writefln("DECODED %s %s %s %s", dec.tokens, dec.numBytes, dec.numLiteralBytes, dec.literalBytesIndex);
         }
     }
 private:

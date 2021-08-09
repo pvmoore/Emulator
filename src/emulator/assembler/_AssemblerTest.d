@@ -5,12 +5,13 @@ import emulator.chips.z80.all;
 
 unittest {
 
+static if(true) {
+
 __gshared Assembler assembler;
-__gshared Disassembler disassembler;
 
 void setup() {
+    writefln("Assembler tests");
     assembler = createZ80Assembler();
-    disassembler = createZ80Disassembler();
 }
 
 void assemble1() {
@@ -312,6 +313,39 @@ defb 6
     assert(lines[6].code == [0x4c, 0x4f, 0xc1]);
     assert(lines[7].code == [97, 98, 99, 0]);
 }
+void cbInstructions() {
+    assembler.reset();
+
+    //-------------------------------------------------------- HL
+    auto lines = assembler.encode("
+        set 1, (hl)
+    ");
+
+    assert(lines.length==1);
+    assert(lines[0].code == [0xcb, 0xce]);
+
+    //-------------------------------------------------------- IX
+    assembler.reset();
+
+    lines = assembler.encode("
+        set 1, (ix + $01)
+    ");
+
+    assert(lines.length==1);
+    assert(lines[0].code == [0xdd, 0xcb, 0x01, 0xce], toHexStringArray(lines[0].code));
+    //                                   ^^^^ displacement
+
+    //-------------------------------------------------------- IY
+    assembler.reset();
+
+    lines = assembler.encode("
+        set 1, (iy + $07)
+    ");
+
+    assert(lines.length==1);
+    assert(lines[0].code == [0xfd, 0xcb, 0x07, 0xce], toHexStringArray(lines[0].code));
+    //                                   ^^^^ displacement
+}
 
 setup();
 
@@ -324,5 +358,7 @@ dataDB();
 dataDW();
 dataDS();
 dataDM();
+cbInstructions();
 
+} // static if
 } // unittest

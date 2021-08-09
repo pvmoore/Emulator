@@ -28,17 +28,17 @@ final class Disassembler {
                 line.tokens = decoding.tokens;
                 line.code   = code[offset..offset+decoding.numBytes];
 
-                auto n = decoding.numBytes - decoding.numLiteralBytes;
+                auto literalIndex = decoding.literalBytesIndex;
 
                 foreach(i, tok; line.tokens) {
                     if(tok=="%02x") {
-                        line.tokens[i] = "$" ~ line.tokens[i].format(line.code[n]);
-                        n++;
+                        line.tokens[i] = "$" ~ line.tokens[i].format(line.code[literalIndex]);
+                        literalIndex++;
                     } else if(tok=="%04x") {
                         line.tokens[i] = "$" ~ line.tokens[i].format(
-                            line.code[n] | (line.code[n+1]<<8)
+                            line.code[literalIndex] | (line.code[literalIndex+1]<<8)
                         );
-                        n += 2;
+                        literalIndex += 2;
                     }
                 }
 

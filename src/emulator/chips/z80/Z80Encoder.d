@@ -55,13 +55,17 @@ final class Z80Encoder : Encoder {
 
             handleAwkwardInstructions(enc);
 
-            foreach(f; match.fixups) {
-                enc.fixups = match.fixups.dup;
+            enc.fixups = match.fixups.dup;
+
+            foreach(i, f; match.fixups) {
+                enc.fixups[i].byteIndex = enc.bytes.length.as!int;
 
                 foreach(n; 0..f.numBytes) {
                     enc.bytes ~= 0;
                 }
             }
+
+            handleDDCB_FDCB(enc);
 
             //writefln("  %s fixup num:%s", enc.bytes.map!(it=>"%02x".format(it).array), enc.numFixupBytes);
         } else {
@@ -132,6 +136,20 @@ private:
             } else if(!n.isOneOf("10", "18", "20", "28", "30", "38")) {
                 asmTokensLower[1] = "%02x".format(asmTokensLower[1].to!int(10));
             }
+        }
+    }
+    /** Move displacement byte for ddcb and fdcb instructions */
+    void handleDDCB_FDCB(Encoder.Encoding enc) {
+        bool filter = enc.bytes.length == 4 &&
+                      (enc.bytes[0] == 0xdd || enc.bytes[0] == 0xfd) &&
+                      enc.bytes[1] == 0xcb;
+        if(filter) {
+            // swap displacement byte
+            ubyte temp = enc.bytes[2];
+            enc.bytes[2] = enc.bytes[3];
+            enc.bytes[3] = temp;
+
+            enc.fixups[0].byteIndex--;
         }
     }
     /** Fix the two awkward 0x36 cases */
@@ -212,6 +230,7 @@ private:
                                        asmTokensLower[0] == "djnz";
                     fixup.negate = negate;
                     fixup.tokens = asmTokens[i..end+1].dup;
+
                     match.fixups ~= fixup;
                     return true;
                 } else {

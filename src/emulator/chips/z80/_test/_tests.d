@@ -149,6 +149,8 @@ void test(string source, ubyte[] code) {
             "%s != %s".format(concatAndRemoveSpace(l.tokens), removeSpace(sourceLines[i])));
     }
 
+    //writefln("execute");
+
     // Execute
     executeCode(code, sourceLines.length);
 }

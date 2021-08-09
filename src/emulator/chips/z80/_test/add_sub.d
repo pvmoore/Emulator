@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     ADD_N = 0xc6,
@@ -462,6 +463,8 @@ void add_HL_rr() {
     assertFlagsClear(N, H);
 }
 
+writefln("add sub tests");
+
 setup();
 
 add_n();
@@ -470,4 +473,5 @@ sub_n();
 sub_r();
 add_HL_rr();
 
+} // static if
 } // unittest

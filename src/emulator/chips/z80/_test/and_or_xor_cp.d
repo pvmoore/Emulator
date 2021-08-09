@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     AND_IX = [0xdd, 0xa6],
@@ -348,6 +349,8 @@ void cp() {
     );
 }
 
+writefln("and or xor cp tests");
+
 setup();
 
 and();
@@ -359,4 +362,5 @@ cp();
 // state.updateH(0x7f, 0x81, 0xfe);
 // writefln("PV = %s", state);
 
+} // static if
 } // unittest

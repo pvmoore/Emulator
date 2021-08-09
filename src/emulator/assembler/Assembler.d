@@ -199,16 +199,12 @@ private:
 
             line.code = encoding.bytes.dup;
 
-            auto j = line.code.length.as!uint - encoding.totalFixupBytes();
-
             foreach(f; encoding.fixups) {
                 uint index = f.tokenIndex;
 
-                log("fixup tokenIindex: %s, byteIndex: %s, expression: %s", index, j, f.tokens);
+                log("fixup tokenIindex: %s, expression: %s", index, f.tokens);
 
-                fixups ~= Fixup(pc, f.numBytes, j, f.isRelative, f.negate, f.tokens);
-
-                j += f.numBytes;
+                fixups ~= Fixup(pc, f.numBytes, f.byteIndex, f.isRelative, f.negate, f.tokens);
             }
 
             pc += line.code.length.as!int;

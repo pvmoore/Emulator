@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     INC_HL = [0x23],
@@ -195,9 +196,12 @@ void dec() {
     // ---------------------------
 }
 
+writefln("inc dec tests");
+
 setup();
+
 inc();
 dec();
 
-
-} //unittest
+} // static if
+} // unittest

@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum INC_A = 0x3c;
 
@@ -489,10 +490,13 @@ void djnz() {
     assert(state.B == 0x01);
 }
 
+writefln("jr jp djnz tests");
+
 setup();
 
 jr();
 jp();
 djnz();
 
+} // static if
 } // unittest

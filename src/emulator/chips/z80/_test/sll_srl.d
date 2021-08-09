@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     SLL_A  = [0xcb, 0x37],
@@ -124,9 +125,12 @@ void srl() {
     assertFlagsClear(H, N, C, S, Z);
 }
 
+writefln("sll srl tests");
+
 setup();
 
 sll();
 srl();
 
+} // static if
 } // unittest

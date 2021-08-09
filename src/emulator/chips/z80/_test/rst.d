@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     RST_00 = 0xc7,
@@ -44,8 +45,11 @@ void rst() {
     assert(bus.read(0x2000) == 0x01);
 }
 
+writefln("rst tests");
+
 setup();
 
 rst();
 
+} // static if
 } // unittest

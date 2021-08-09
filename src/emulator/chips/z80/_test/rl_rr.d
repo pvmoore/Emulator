@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     RL_A = [0xcb, 0x17],
@@ -14,8 +15,6 @@ enum {
     RL_H = [0xcb, 0x14],
     RL_L = [0xcb, 0x15],
     RL_HL = [0xcb, 0x16],
-    RL_IX = [0xdd, 0xcb, 0x16],
-    RL_IY = [0xfd, 0xcb, 0x16],
 
     RR_A = [0xcb, 0x1f],
     RR_B = [0xcb, 0x18],
@@ -25,8 +24,6 @@ enum {
     RR_H = [0xcb, 0x1c],
     RR_L = [0xcb, 0x1d],
     RR_HL = [0xcb, 0x1e],
-    RR_IX = [0xdd, 0xcb, 0x1e],
-    RR_IY = [0xfd, 0xcb, 0x1e],
 }
 void rl() {
     cpu.reset();
@@ -136,7 +133,7 @@ void rl() {
     state.IX = 0x0000;
     test("
         rl (ix+$01)
-    ", RL_IX ~ [0x01]);
+    ", [0xdd, 0xcb, 0x01, 0x16]);
 
     assert(bus.read(0x0001) == 0b1110_0001);
     assertFlagsSet(C, S, PV);
@@ -148,7 +145,7 @@ void rl() {
     state.IY = 0x0000;
     test("
         rl (iy+$01)
-    ", RL_IY ~ [0x01]);
+    ", [0xfd, 0xcb, 0x01, 0x16]);
 
     assert(bus.read(0x0001) == 0b1110_0001);
     assertFlagsSet(C, S, PV);
@@ -263,7 +260,7 @@ void rr() {
     state.IX = 0x0000;
     test("
         rr (ix+$01)
-    ", RR_IX ~ [0x01]);
+    ", [0xdd, 0xcb, 0x01, 0x1e]);
 
     assert(bus.read(0x0001) == 0b1000_0111);
     assertFlagsSet(C, S, PV);
@@ -275,16 +272,19 @@ void rr() {
     state.IY = 0x0000;
     test("
         rr (iy+$01)
-    ", RR_IY ~ [0x01]);
+    ", [0xfd, 0xcb, 0x01, 0x1e]);
 
     assert(bus.read(0x0001) == 0b1000_0111);
     assertFlagsSet(C, S, PV);
     assertFlagsClear(H, N, Z);
 }
 
+writefln("rl rr tests");
+
 setup();
 
 rl();
 rr();
 
+} // static if
 } // unittest

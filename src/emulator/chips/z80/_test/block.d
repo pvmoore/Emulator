@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     LDI = [0xed, 0xa0],
@@ -504,6 +505,9 @@ void otdr() {
     assert(readPort(10) == 0x01);
     assertFlagsSet(N, Z);
 }
+
+writefln("block tests");
+
 setup();
 
 ldi();
@@ -523,4 +527,5 @@ indr();
 otir();
 otdr();
 
+} // static if
 } // unittest

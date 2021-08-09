@@ -7,8 +7,8 @@ interface Decoder {
         bool match;
         string[] tokens;
         int numBytes;
-
         int numLiteralBytes;
+        int literalBytesIndex;
 
         void reset() {
             match = false;

@@ -26,6 +26,11 @@ struct Instruction {
 }
 struct Op {
     ubyte code;
+    Opt!byte displacement;
+
+    static Op make() {
+        return Op(0, Opt!(byte).init, Reg.HL, Reg.H, Reg.L);
+    }
 
     Reg regHL = Reg.HL; // HL, IX, IY
     Reg regH = Reg.H;   // H, IXH, IYH
@@ -42,6 +47,9 @@ Reg getAdjustedReg8(Op op, Reg r) {
 }
 private byte getDisplacement(Z80 cpu, Op op) {
     if(op.regHL == Reg.HL) return 0;
+    // If this is a DDCB or a FDCB instruction then the displacement has already been fetched
+    if(op.displacement.exists) return op.displacement.orElse(0);
+    // Otherwise fetch the displacement now
     ubyte d = cpu.fetchByte();
     return d;
 }

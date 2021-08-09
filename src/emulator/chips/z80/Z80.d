@@ -27,7 +27,7 @@ public:
     const(Instruction)* execute() {
         ubyte[] codes;
         const(Instruction)* instruction;
-        auto op = Op(0x00, Reg.HL, Reg.H, Reg.L);
+        auto op = Op.make();
 
         void _fetch() {
             codes ~= (op.code = fetchByte());
@@ -49,6 +49,9 @@ public:
             op.regH = Reg.IXH;
             op.regL = Reg.IXL;
             if(op.code == 0xcb) {
+                // The next byte is a displacement
+                _fetch();
+                op.displacement = opt(op.code.as!byte);
                 _fetch();
                 instruction = &groupDDCB[op.code];
             } else {
@@ -64,6 +67,9 @@ public:
             op.regH = Reg.IYH;
             op.regL = Reg.IYL;
             if(op.code == 0xcb) {
+                // The next byte is a displacement
+                _fetch();
+                op.displacement = opt(op.code.as!byte);
                 _fetch();
                 instruction = &groupFDCB[op.code];
             } else {

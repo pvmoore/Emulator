@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     INC_A   = 0x3c,
@@ -569,9 +570,12 @@ void ret() {
     assert(state.PC == 0x1004);
 }
 
+writefln("call ret tests");
+
 setup();
 
 call();
 ret();
 
+} // static if
 } // unittest

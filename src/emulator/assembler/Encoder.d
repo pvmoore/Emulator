@@ -26,6 +26,7 @@ interface Encoder {
         bool isRelative;
         bool negate;
         string[] tokens;
+        int byteIndex;
     }
 
     void encode(Encoding enc, string[] tokens, string[] tokensLower);

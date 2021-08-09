@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 void pushPop() {
     cpu.reset();
@@ -39,7 +40,11 @@ void pushPop() {
     assert(state.IY == 0x0606);
 }
 
+writefln("push pop tests");
+
 setup();
+
 pushPop();
 
+} // static if
 } // unit test

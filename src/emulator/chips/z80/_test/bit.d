@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 void bit() {
     cpu.reset();
@@ -56,37 +57,42 @@ void bit() {
         assertFlagsSet(H, Z);
         assertFlagsClear(N);
 
+        writefln("===> BIT %s", BIT);
 
         state.IX = 0x0000;
-        test("\tbit %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tbit %s, (ix+$00)".format(BIT), [0xdd, 0xcb, 0x00, (i+6).as!ubyte]);
+
+        writefln("Success.....");
 
         assertFlagsSet(H);
         assertFlagsClear(N, Z);
 
         state.IX = 0x0001;
-        test("\tbit %s, (ix+$00)".format(BIT), [0xdd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tbit %s, (ix+$00)".format(BIT), [0xdd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assertFlagsSet(H, Z);
         assertFlagsClear(N);
 
 
         state.IY = 0x0000;
-        test("\tbit %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tbit %s, (iy+$00)".format(BIT), [0xfd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assertFlagsSet(H);
         assertFlagsClear(N, Z);
 
         state.IY = 0x0001;
-        test("\tbit %s, (iy+$00)".format(BIT), [0xfd, 0xcb, (i+6).as!ubyte, 0x00]);
+        test("\tbit %s, (iy+$00)".format(BIT), [0xfd, 0xcb, 0x00, (i+6).as!ubyte]);
 
         assertFlagsSet(H, Z);
         assertFlagsClear(N);
-
     }
 }
+
+writefln("bit tests");
 
 setup();
 
 bit();
 
+} // static if
 } // unittest

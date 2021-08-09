@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     IN_A_N  = 0xdb,     // in a, (n)
@@ -206,6 +207,9 @@ void out_c() {
     assert(readPort(8) == 0x17);
     assertFlagsClear(allFlags());
 }
+
+writefln("in out tests");
+
 setup();
 
 in_a();
@@ -213,4 +217,5 @@ out_a();
 in_c();
 out_c();
 
+} // static if
 } // unittest

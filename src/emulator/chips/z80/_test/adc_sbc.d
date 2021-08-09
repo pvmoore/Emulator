@@ -4,6 +4,7 @@ import emulator.chips.z80.all;
 import emulator.chips.z80._test._tests;
 
 unittest {
+static if(true) {
 
 enum {
     ADC_N  = 0xce,
@@ -575,6 +576,8 @@ void sbc_rr() {
     assertFlagsClear(S, Z, C, H, PV);
 }
 
+writefln("adc sbc tests");
+
 setup();
 
 adc();
@@ -582,5 +585,5 @@ sbc();
 adc_rr();
 sbc_rr();
 
+} // static if
 } // unittest
-
