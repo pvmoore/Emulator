@@ -1,4 +1,4 @@
-module emulator.machine.spectrum.widgets.ScreenUI;
+module emulator.machine.spectrum.ui.ScreenUI;
 
 import emulator.machine.spectrum.all;
 import vulkan.all;
@@ -57,6 +57,7 @@ private:
     Camera2D camera;
 
     int borderColour = -1;
+    double lastScreenRenderTime = -10;
 public:
     this(VulkanContext context, Spectrum spectrum) {
         this.context = context;
@@ -96,6 +97,30 @@ public:
         quads.insideRenderPass(frame);
     }
 private:
+    bool shouldUpdateBorder() {
+        ubyte value = ports.data[0xfe];
+
+        if(value == borderColour) {
+            // The border colour hasn't changed so no need to re-write it
+            return false;
+        }
+
+        borderColour = value;
+        return true;
+    }
+    bool shouldUpdateScreen(Frame frame) {
+        double frequency = UIState.state == UIState.State.PAUSED
+            ? 1         // 1 update per second while paused
+            : 1.0 / 60; // 60 updates per second while running
+
+        if(lastScreenRenderTime + frequency > frame.seconds) {
+            return false;
+        }
+
+        lastScreenRenderTime = frame.seconds;
+
+        return true;
+    }
     RGBAb getPixelColour(double seconds, bool pixel, ubyte attrib) {
         bool flash    = (attrib & Attrib.FLASH) != 0;
         bool bright   = (attrib & Attrib.BRIGHT) != 0;
@@ -117,14 +142,8 @@ private:
         return COLOURS[col];
     }
     void writeBorder(Frame frame) {
-        ubyte value = ports.data[0xfe];
+        if(!shouldUpdateBorder()) return;
 
-        if(value == borderColour) {
-            // The border colour hasn't changed so no need to re-write it
-            return;
-        }
-
-        borderColour = value;
         RGBAb colour = COLOURS[borderColour];
 
         RGBAb* ptr = image.map();
@@ -149,6 +168,8 @@ private:
         ptr[IMAGE_WIDTH*(BORDER+192*2)..IMAGE_WIDTH*IMAGE_HEIGHT] = colour;
     }
     void writeScreen(Frame frame) {
+        if(!shouldUpdateScreen(frame)) return;
+
         RGBAb* destPtr      = image.map() + (BORDER*IMAGE_WIDTH)+BORDER; // adjust for border
         ubyte* srcPixelPtr  = &memory.data[0x4000];   // screen pixel data
         ubyte* srcAttribPtr = &memory.data[0x5800];   // screen attribute data

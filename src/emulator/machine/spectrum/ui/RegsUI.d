@@ -1,4 +1,4 @@
-module emulator.machine.spectrum.widgets.RegsUI;
+module emulator.machine.spectrum.ui.RegsUI;
 
 import emulator.machine.spectrum.all;
 import vulkan.all;

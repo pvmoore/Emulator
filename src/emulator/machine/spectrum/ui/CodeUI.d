@@ -1,4 +1,4 @@
-module emulator.machine.spectrum.widgets.CodeUI;
+module emulator.machine.spectrum.ui.CodeUI;
 
 import emulator.machine.spectrum.all;
 import vulkan.all;
@@ -90,20 +90,37 @@ public:
 
         if(igBegin("Code", null, windowFlags)) {
 
-            enum size = ImVec2(0, HEIGHT-78);
-            enum border = true;
-            enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
+            if (igBeginTabBar("MyTabBar", ImGuiTabItemFlags_None)) {
 
-            igBeginChildStr("##scrollingChildWindow",
-                size,
-                border,
-                childFlags);
+                //auto flags = selectTab == 0 ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
 
-            renderTable();
+                if (igBeginTabItem("Instructions", null, ImGuiTabItemFlags_None))
+                {
+                    enum size = ImVec2(0, HEIGHT-106);
+                    enum border = true;
+                    enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
 
-            igEndChild();
+                    igBeginChildStr("##scrollingChildWindow",
+                        size,
+                        border,
+                        childFlags);
 
-            renderButtons();
+                    renderTable();
+                    igEndChild();
+
+                    renderButtons();
+                    igEndTabItem();
+                }
+
+                //flags = selectTab == 1 ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+                if (igBeginTabItem("Breakpoints", null, ImGuiTabItemFlags_None)) {
+                    renderBreakpointList();
+                    igEndTabItem();
+                }
+
+
+                igEndTabBar();
+            }
         }
 
         igEnd();
@@ -115,6 +132,35 @@ private:
                 breakpointLines.add(i.as!uint);
             }
         }
+    }
+    void renderBreakpointList() {
+        auto numLines = breakpointLines.length.as!uint;
+        if(numLines==0) return;
+
+        float lineHeight = igGetTextLineHeightWithSpacing();
+
+        ImGuiListClipper clipper;
+        ImGuiListClipper_Begin(&clipper, numLines, lineHeight);
+        ImGuiListClipper_Step(&clipper);
+
+        auto array = breakpointLines.values();
+
+        for (int line = clipper.DisplayStart; line < clipper.DisplayEnd; line++) {
+            auto l = array[line];
+            auto addr = lines[l].address;
+            igText("[%04x]".format(addr).toStringz());
+            igSameLine(0,5);
+            if(igButton("Go", ImVec2(0,0))) {
+                scrollToLine(l);
+                // TODO - select code tab
+            }
+            igSameLine(0,10);
+            if(igButton("Remove", ImVec2(0,0))) {
+                breakpointLines.remove(l);
+            }
+        }
+
+        ImGuiListClipper_End(&clipper);
     }
     void renderButtons() {
 
@@ -143,9 +189,10 @@ private:
         igSameLine(0,20);
         igPushButtonRepeat(true);
         if(igButton("Step", ImVec2(0,0))) {
-
+            UIState.executing();
             spectrum.execute(null, 1, null, () {
                 scrollToAddress(state.PC);
+                UIState.paused();
             });
         }
         igPopButtonRepeat();
@@ -164,10 +211,12 @@ private:
                 auto addr = lines[l].address;
                 breakpointAddresses.add(addr);
             }
-
+            UIState.executing();
             spectrum.execute(breakpointAddresses, maxRunInstructions, () {
                 scrollToAddress(state.PC);
-            }, null);
+            }, () {
+                UIState.paused();
+            });
         }
 
         igSameLine(0,5);
@@ -177,9 +226,10 @@ private:
                 auto addr = lines[l].address;
                 breakpointAddresses.add(addr);
             }
-
+            UIState.executing();
             spectrum.execute(breakpointAddresses, maxRunInstructions, null, () {
                 scrollToAddress(state.PC);
+                UIState.paused();
             });
         }
     }
@@ -225,15 +275,11 @@ private:
         }
     }
     void renderRow(int line, bool highlightRow) {
-        auto bytes = lines[line].code.map!(it=>"%02X".format(it)).join(" ");
+
 
         igTableNextRow(ImGuiTableRowFlags_None, 10);
 
         if(highlightRow) {
-    //     ImGuiTableBgTarget_None = 0,
-    //     ImGuiTableBgTarget_RowBg0 = 1,
-    //     ImGuiTableBgTarget_RowBg1 = 2,
-    //     ImGuiTableBgTarget_CellBg = 3,
             igTableSetBgColor(ImGuiTableBgTarget_RowBg0, 0x6000ff00, -1);
 
         } else if(breakpointLines.contains(line)) {
@@ -251,19 +297,14 @@ private:
             }
         }
 
-        igTableSetColumnIndex(1);
-        igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(bytes));
-
-        igTableSetColumnIndex(2);
-        renderInstructions(lines[line].tokens);
-
-        igTableSetColumnIndex(3);
-        renderComment(lines[line].address);
+        renderBytes(line);
+        renderInstructions(line);
+        renderComment(line);
     }
     void renderAddressAndLabel(int line) {
+        igTableSetColumnIndex(0);
         auto address = lines[line].address;
         auto addrStr = "%04X".format(address);
-        igTableSetColumnIndex(0);
         igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(addrStr));
         auto p = address in labels;
         if(p) {
@@ -271,7 +312,14 @@ private:
             igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(*p ~ ":"));
         }
     }
-    void renderInstructions(string[] tokens) {
+    void renderBytes(int line) {
+        igTableSetColumnIndex(1);
+        auto bytes = lines[line].code.map!(it=>"%02X".format(it)).join(" ");
+        igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(bytes));
+    }
+    void renderInstructions(int line) {
+        igTableSetColumnIndex(2);
+        string[] tokens = lines[line].tokens;
         string prev = "";
         foreach(i, t; tokens) {
             if(i>0) {
@@ -298,13 +346,22 @@ private:
             prev = t;
         }
     }
-    void renderComment(uint address) {
+    void renderComment(int line) {
+        igTableSetColumnIndex(3);
+        auto address = lines[line].address;
         auto ptr = address in comments;
         auto s = ptr ? *ptr : "";
         igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(s));
     }
     void addLabels() {
         // labels from https://skoolkid.github.io/rom/asm
+        this.labels[0x0edf] = "CLEAR_PRB";
+        this.labels[0x0ee7] = "PRB_BYTES";
+
+        this.labels[0x0dd9] = "CL_SET";
+        this.labels[0x0dee] = "CL_SET_1";
+        this.labels[0x0df4] = "CL_SET_2";
+
         this.labels[0x11b7] = "NEW";
         this.labels[0x11cb] = "START_NEW";
         this.labels[0x11dc] = "RAM_FILL";
@@ -316,6 +373,6 @@ private:
         this.comments[0x0066] = "NMI jump target address";
     }
     void addBreakpoints() {
-        addBreakpointAtAddress(0x11ef);
+        addBreakpointAtAddress(0x0EDF);
     }
 }

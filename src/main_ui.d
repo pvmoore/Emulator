@@ -28,7 +28,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int i
 		speccy.reset();
 
 		speccy.writeToMemory(0x4000,
-			cast(ubyte[])From!"std.file".read("C:/Temp/emulators/spectrum/scr/aticatac.scr"));
+			cast(ubyte[])From!"std.file".read("C:/Temp/emulators/spectrum/scr/hobbitthe.scr"));
 
         app = new SpectrumUI(speccy);
 

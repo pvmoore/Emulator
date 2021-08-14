@@ -1,4 +1,4 @@
-module emulator.machine.spectrum.widgets.SpectrumUI;
+module emulator.machine.spectrum.ui.SpectrumUI;
 
 import emulator.all;
 import emulator.machine.spectrum.all;

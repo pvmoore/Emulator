@@ -9,8 +9,9 @@ import emulator.machine.spectrum.Tap;
 import emulator.machine.spectrum.Tzx;
 import emulator.machine.spectrum.Z80Snapshot;
 
-import emulator.machine.spectrum.widgets.CodeUI;
-import emulator.machine.spectrum.widgets.MemoryUI;
-import emulator.machine.spectrum.widgets.RegsUI;
-import emulator.machine.spectrum.widgets.ScreenUI;
-import emulator.machine.spectrum.widgets.SpectrumUI;
+import emulator.machine.spectrum.ui.CodeUI;
+import emulator.machine.spectrum.ui.MemoryUI;
+import emulator.machine.spectrum.ui.RegsUI;
+import emulator.machine.spectrum.ui.ScreenUI;
+import emulator.machine.spectrum.ui.SpectrumUI;
+import emulator.machine.spectrum.ui.UIState;
