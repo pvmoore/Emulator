@@ -2,7 +2,7 @@ module emulator.assembler.Token;
 
 import emulator.assembler.all;
 
-__gshared NO_TOKEN = Token(-1,-1,-1,Kind.NONE);
+__gshared NO_TOKEN = Token(-1, -1, -1, false, Kind.NONE);
 
 struct Token {
     int start;

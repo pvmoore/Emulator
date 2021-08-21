@@ -1,6 +1,6 @@
 module emulator.assembler.Assembler;
 
-import emulator.assembler.all;
+import emulator.all;
 
 /**
  *  Generic assembler.
@@ -9,7 +9,7 @@ import emulator.assembler.all;
  *  TODO - handle data
  */
 final class Assembler {
-
+public:
     this(bool littleEndian, Encoder encoder) {
         this.littleEndian = littleEndian;
         this.encoder = encoder;
@@ -29,6 +29,8 @@ final class Assembler {
         labelToAddress = null;
         addressToLine = null;
         fixups = null;
+        tokens = null;
+        text = null;
 
         this.absExprParser = new ExpressionParser!uint;
         this.relExprParser = new ExpressionParser!uint;
@@ -36,7 +38,7 @@ final class Assembler {
     Lines encode(string text) {
         log("Running assembler ...");
         this.text = text;
-        this.lexer = new Lexer(text);
+        auto lexer = new Lexer(text);
 
         this.tokens = lexer.tokenise();
         if(tokens.length==0) return new Lines(null);
@@ -76,18 +78,12 @@ final class Assembler {
 private:
     void log(A...)(string fmt, A args) {
         if(false)
-            writefln(format(fmt, args));
+            .log(this, format(fmt, args));
     }
     bool littleEndian;
     Set!string dataDirectives;
-    string text;
-    Lexer lexer;
-    Encoder encoder;
-    Token[] tokens;
-    ExpressionParser!uint absExprParser;
-    ExpressionParser!uint relExprParser;
 
-    static struct Fixup {
+    struct Fixup {
         uint address;
         uint numBytes;
         uint byteIndex;
@@ -96,6 +92,11 @@ private:
         string[] expressionTokens;
     }
 
+    string text;
+    Encoder encoder;
+    Token[] tokens;
+    ExpressionParser!uint absExprParser;
+    ExpressionParser!uint relExprParser;
     string[][string] constants;
     uint[string] labelToAddress;
     Line[uint] addressToLine;
@@ -120,9 +121,9 @@ private:
             string[] strings    = tup[0];
             bool startsOnMargin = tup[1];
             int length          = strings.length.as!int;
-            assert(length>0);
+            if(length<=0) throw new Exception("Length must be > 0");
 
-            auto line = getLineAtAddress(pc);
+            Line* line = getLineAtAddress(pc);
             line.number = lineNumber;
 
             string first  = strings[0].toLower();
@@ -268,7 +269,7 @@ private:
                     todo("handle more than 2 fixup bytes");
                 }
             }catch(Exception e) {
-                writefln("Fixup failed on line %s:\n\tfixup=%s\n\tline = %s"
+                log("Fixup failed on line %s:\n\tfixup=%s\n\tline = %s"
                     .format(line.number, f, line.toString()));
                 throw e;
             }
@@ -452,7 +453,7 @@ private:
         auto p = pc in addressToLine;
         if(!p) {
             addressToLine[pc] = Line.atAddress(pc);
-            return getLineAtAddress(pc);
+            p = pc in addressToLine;
         }
         return p;
     }

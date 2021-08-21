@@ -9,6 +9,7 @@ import core.thread              : Thread;
 import std.stdio                : writef, writefln;
 import std.format               : format;
 import std.datetime.stopwatch   : StopWatch;
+import std.string               : toStringz, fromStringz;
 
 import common;
 import logging;

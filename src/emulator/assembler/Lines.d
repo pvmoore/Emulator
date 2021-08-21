@@ -63,7 +63,7 @@ public:
         }
         return code;
     }
-    void dump() {
+    void _dump() {
         foreach(l; lines) {
             writefln("\t%s", l);
         }

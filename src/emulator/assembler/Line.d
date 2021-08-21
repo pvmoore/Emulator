@@ -8,6 +8,7 @@ struct Line {
     ubyte[] code;
     string[] tokens;
     string[] labels;
+    string[] comments;
 
     static Line atAddress(uint pc) {
         return Line(0, pc);

@@ -24,7 +24,6 @@ private:
 
     LinesW lines;
     uint _scrollToLine = uint.max;
-    string[uint] comments;
     Set!uint breakpointLines;
     WatchRange[] watchList;
     int maxRunInstructions = 0;
@@ -39,28 +38,30 @@ public:
         this.breakpointLines = new Set!uint;
         this.regs.add([
             "a", "b", "c", "d", "e", "f", "h", "l", "i", "r",
-            "bc", "de", "hl", "ix", "iy",
+            "af", "bc", "de", "hl", "ix", "iy",
             "ixh", "ixl", "iyh", "iyl"
         ]);
 
-        decode(0, 0x4000);
+        // Assume ROM is in memory
+        codeModified(0, 0x4000);
     }
     /**
      * Either:
      *  1 - ROM loaded
      *  2 - Tape loaded
-     *  3 - Memory edited
+     *  3 - Snapshot loaded
+     *  4 - Memory edited
      */
-    void decode(uint fromAddr, uint length) {
+    void codeModified(uint fromAddr, uint length) {
         vkassert(fromAddr <= 0xffff);
+
         if(fromAddr + length > 0x10000) length = 0x10000 - fromAddr;
         ubyte[] code = spectrum.readFromMemory(fromAddr.as!ushort, length.as!ushort);
 
         auto newLines = disasm.decode(code, fromAddr);
         log("Decompiled %s lines", newLines.length);
-        mergeLines(newLines);
 
-        scrollToAddress(fromAddr);
+        addLines(newLines);
 
         addBreakpoints();
 
@@ -68,6 +69,14 @@ public:
             addROMLabels();
             addROMComments();
         }
+    }
+    /**
+     * Assembly file loaded
+     */
+    void addLines(LinesW newLines) {
+        auto fromAddr = newLines[0].address;
+        mergeLines(newLines);
+        scrollToAddress(fromAddr);
     }
     void scrollToAddress(uint addr) {
         // Calculate line for this address - a bit inefficient but not called often
@@ -132,7 +141,9 @@ private:
         if(lines is null) {
             lines = newLines;
         } else {
-            todo();
+            log("before merge lines is %04x to %04x", lines.first().address, lines.last().address);
+            lines.merge(newLines);
+            log("lines is now %04x to %04x", lines.first().address, lines.last().address);
         }
     }
     void addBreakpointAtAddress(uint addr) {
@@ -393,9 +404,14 @@ private:
     void renderComment(int line) {
         igTableSetColumnIndex(3);
         auto address = lines[line].address;
-        auto ptr = address in comments;
-        auto s = ptr ? *ptr : "";
-        igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(s));
+
+        if(lines[line].comments) {
+            string comment = lines[line].comments.length == 1
+                ? lines[line].comments[0]
+                : lines[line].comments.join(", ");
+
+            igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(comment));
+        }
     }
     void renderCodeButtons() {
 
@@ -481,6 +497,11 @@ private:
             line.labels ~= label;
         }
     }
+    void addComment(uint addr, string comment) {
+        if(auto line = lines.getLineAtAddress(addr)) {
+            line.comments ~= comment;
+        }
+    }
     /**
      * Labels from:
      *      https://skoolkid.github.io/rom/maps/all.html
@@ -535,7 +556,7 @@ private:
         addLabel(0x16dc, "INDEXER");
     }
     void addROMComments() {
-        this.comments[0x0066] = "NMI jump target address";
+        addComment(0x0066, "NMI jump target address");
     }
     void addBreakpoints() {
         addBreakpointAtAddress(0x1615);

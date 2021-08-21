@@ -1,6 +1,6 @@
 module emulator.assembler.Lexer;
 
-import emulator.assembler.all;
+import emulator.all;
 import std.string : toLower;
 
 final class Lexer {
@@ -15,10 +15,14 @@ public:
     this(string text) {
         this.text = text;
     }
+    // Token[] test() {
+    //     tokens ~= Token();
+    //     return tokens;
+    // }
     Token[] tokenise() {
         while(pos < text.length) {
             auto ch = peek();
-            //writefln("ch = %s", ch);
+            //log("ch = %s", ch);
             if(ch<33) {
                 addToken();
                 if(!handleEOL()) {
@@ -79,7 +83,7 @@ public:
         addToken();
 
         // foreach(t; tokens) {
-        //     writefln("%s", t.toString(text));
+        //     log("%s", t.toString(text));
         // }
 
         return tokens;
@@ -147,13 +151,13 @@ private:
         return Kind.TEXT;
     }
     void doAddToken(Kind k, string text) {
-        //writefln("addToken(%s, '%s', pos=%s)", k, text, pos);
+        //log("addToken(%s, '%s', pos=%s)", k, text, pos);
         Token t = {
             start: bufStart,
             length: text.length.as!int,
             line: line,
-            kind: k,
-            firstColumn: bufStart == lineStart
+            firstColumn: bufStart == lineStart,
+            kind: k
         };
         tokens ~= t;
     }

@@ -85,7 +85,7 @@ void loadAsm() {
     auto lines = assembler.encode(src);
     auto code = lines.extractCode();
 
-    lines.dump();
+    lines._dump();
 
 
 static if(false) {

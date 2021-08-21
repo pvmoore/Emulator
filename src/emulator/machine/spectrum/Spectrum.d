@@ -14,6 +14,7 @@ private:
     bool running = true;
     Semaphore executeSemaphore;
     WatchRange[] watchList;
+    Assembler assembler;
 public:
     auto getCpu()    { return cpu; }
     auto getMemory() { return memory; }
@@ -34,6 +35,8 @@ public:
         cpu.addBus(bus);
 
         this.executeSemaphore = new Semaphore();
+
+        this.assembler = createZ80Assembler();
 
         auto thread = new Thread(&run);
         thread.isDaemon(true);

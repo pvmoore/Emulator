@@ -19,6 +19,9 @@ public:
         this.state = cpu.state;
     }
     void render(Frame frame) {
+
+
+
         igSetNextWindowPos(ImVec2(1390,890), ImGuiCond_Once, ImVec2(1.0, 1.0));
         igSetNextWindowSize(ImVec2(WIDTH, HEIGHT), ImGuiCond_Once);
 

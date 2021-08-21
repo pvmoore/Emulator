@@ -273,7 +273,7 @@ private:
                 if(igMenuItem("Load Asm")) {
                     string filename = fileDialog.open(".", "*.asm");
                     if(filename) {
-                        //spectrum.loadAsm(filename);
+                        loadAsm(filename);
                     }
                 }
                 igSeparator();
@@ -296,5 +296,22 @@ private:
 
             igEndMenuBar();
         }
+    }
+    void loadAsm(string filename) {
+        import std.file : read;
+
+        this.log("Loading asm file: %s", filename);
+        auto text = cast(string)read(filename);
+        auto assembler = createZ80Assembler();
+        auto lines = assembler.encode(text);
+        log("lines = %s %s", lines, lines.length);
+
+        auto startAddr = lines.first().address;
+        auto endAddr = lines.last().address;
+        auto data = lines.extractCode();
+
+        this.log("[%04x] -> [%04x] len = %s", startAddr, endAddr, data.length);
+
+        codeUI.addLines(lines);
     }
 }
