@@ -12,6 +12,7 @@ import std.datetime.stopwatch   : StopWatch;
 
 import common;
 import logging;
+import events;
 
 import emulator.Bus;
 import emulator.Memory;

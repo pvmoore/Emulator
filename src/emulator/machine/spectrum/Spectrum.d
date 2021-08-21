@@ -13,6 +13,7 @@ private:
     Bus bus;
     bool running = true;
     Semaphore executeSemaphore;
+    WatchRange[] watchList;
 public:
     auto getCpu()    { return cpu; }
     auto getMemory() { return memory; }
@@ -38,6 +39,14 @@ public:
         thread.isDaemon(true);
         thread.name("Spectrum Executor");
         thread.start();
+
+        getEvents().subscribe("Memory", Evt.WATCH_ADDED | Evt.WATCH_REMOVED, (EventMsg m) {
+            if(m.id==Evt.WATCH_ADDED) {
+                watchList ~= WatchRange.from(m.get!ulong);
+            } else if(m.id==Evt.WATCH_REMOVED) {
+                watchList.remove(WatchRange.from(m.get!ulong));
+            }
+        });
     }
     void destroy() {
         this.running = false;
@@ -55,6 +64,20 @@ public:
         log("ROM loaded");
     }
     void loadTape(string filename) {
+        this.log("Loading tape '%s'", filename);
+        auto tap = Loader.loadTape(filename);
+        this.log("======================================== %s", filename);
+        this.log("autoStart line: %s", tap.getAutoStartLine());
+        this.log("%s", decodeBASIC(tap.getBasicProgram()));
+        this.log("Data: %s", tap.getBasicData());
+        foreach(m; tap.getMemBlocks()) {
+            this.log("  %s", m);
+        }
+    }
+    void loadSnapshot(string filename) {
+
+    }
+    void saveSnapshot(string filename) {
 
     }
     ubyte[] readFromMemory(ushort addr, ushort numBytes) {
@@ -99,6 +122,9 @@ private:
 
     void run() {
         this.log("Execute thread running");
+
+        ubyte[] ramSnapshot = new ubyte[65536];
+
         while(running) {
             this.log("Waiting on execute Semaphore");
             executeSemaphore.wait();
@@ -108,13 +134,18 @@ private:
             atomicStore(_isExecuting, true);
             numInstructionsExecuted = 0;
 
-            while(maxInstructionsToExecute == 0 ||
-                 numInstructionsExecuted < maxInstructionsToExecute)
-            {
+            while(maxInstructionsToExecute == 0 || numInstructionsExecuted < maxInstructionsToExecute) {
+                // Save memory snapshot if we are watching data
+                takeWatchListSnapshot(ramSnapshot);
 
-                cpu.execute();
+                // Execute the next instruction
+                auto instruction = cpu.execute();
                 numInstructionsExecuted++;
 
+                // Check for watch list changes
+                bool watchTriggered = checkWatchList(ramSnapshot);
+
+                // Callback after instruction
                 if(afterInstruction) {
                     afterInstruction();
                 }
@@ -123,10 +154,38 @@ private:
                     this.log("Hit breakpoint @ address %04x", cpu.state.PC);
                     break;
                 }
+                if(watchTriggered) {
+                    this.log("Watch triggered @ address %04x", cpu.state.PC);
+                    break;
+                }
             }
+            // callback after all executing has finished
             if(afterExecute) afterExecute();
             atomicStore(_isExecuting, false);
         }
-        this.log("Execute thread existing");
+        this.log("Execute thread exiting");
+    }
+    void takeWatchListSnapshot(ref ubyte[] snapshot) {
+        // This is not efficient.
+        // It copies all memory regardless of the size of any WatchRanges
+        if(watchList.length > 0) {
+            snapshot[] = memory.data[];
+        }
+    }
+    bool checkWatchList(ubyte[] snapshot) {
+        if(watchList.length > 0) {
+            foreach(range; watchList) {
+                const start = range.start;
+                const end = range.start+range.numBytes;
+
+                foreach(i; start..end) {
+                    if(memory.data[i] != snapshot[i]) {
+                        fireWatchTriggered(i);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

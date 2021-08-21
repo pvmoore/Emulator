@@ -22,9 +22,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int i
 	try{
         Runtime.initialize();
 
+		initEvents(1024);
         setEagerFlushing(true);
 
 		auto speccy = new Spectrum();
+
+		// This will reset the CPU and load the ROM
 		speccy.reset();
 
 		speccy.writeToMemory(0x4000,

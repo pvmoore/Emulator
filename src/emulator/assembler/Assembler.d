@@ -33,13 +33,13 @@ final class Assembler {
         this.absExprParser = new ExpressionParser!uint;
         this.relExprParser = new ExpressionParser!uint;
     }
-    Line[] encode(string text) {
+    Lines encode(string text) {
         log("Running assembler ...");
         this.text = text;
         this.lexer = new Lexer(text);
 
         this.tokens = lexer.tokenise();
-        if(tokens.length==0) return null;
+        if(tokens.length==0) return new Lines(null);
 
         pass1();
 
@@ -59,7 +59,7 @@ final class Assembler {
 
         pass2();
 
-        return getLinesInOrder();
+        return new Lines(getLinesInOrder());
     }
     /**
      *  @return the Line at address or an empty Line

@@ -83,11 +83,10 @@ void loadAsm() {
     auto assembler = createZ80Assembler();
 
     auto lines = assembler.encode(src);
-    auto code = extractCode(lines);
+    auto code = lines.extractCode();
 
-    foreach(l; lines) {
-        writefln("%s", l);
-    }
+    lines.dump();
+
 
 static if(false) {
 
@@ -120,8 +119,8 @@ void decode() {
     ubyte[] bytes = [243,221,33,0,176,17,17,0,62,0,55,205,86,5,221,33,0,64,17,88,27,62,255,55,205,86,5,195,4,91];
     auto disasm = createZ80Disassembler();
     auto lines = disasm.decode(bytes, 0);
-    foreach(l; lines) {
-        writefln("%s", formatDisassembly(l.tokens));
+    foreach(l; lines.lines) {
+        writefln("%s", l.formatDisassembly());
     }
 }
 void loadTap() {

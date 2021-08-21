@@ -58,6 +58,7 @@ private:
 
     int borderColour = -1;
     double lastScreenRenderTime = -10;
+    shared bool isExecuting = false;
 public:
     this(VulkanContext context, Spectrum spectrum) {
         this.context = context;
@@ -83,6 +84,12 @@ public:
         quads.camera(camera)
              .setSize(float2(IMAGE_WIDTH, IMAGE_HEIGHT))
              .add(float2(10,30));
+
+        getEvents().subscribe("Screen", Evt.EXECUTE_STATE_CHANGED,
+            (EventMsg m) {
+                atomicStore(isExecuting, m.get!ExecuteState == ExecuteState.EXECUTING);
+            }
+        );
     }
     void destroy() {
         if(quads) quads.destroy();
@@ -109,9 +116,9 @@ private:
         return true;
     }
     bool shouldUpdateScreen(Frame frame) {
-        double frequency = UIState.state == UIState.State.PAUSED
-            ? 1         // 1 update per second while paused
-            : 1.0 / 60; // 60 updates per second while running
+        double frequency = atomicLoad(isExecuting)
+            ? 1.0 / 60   // 60 updates per second while running
+            : 1;         // 1 update per second while paused
 
         if(lastScreenRenderTime + frequency > frame.seconds) {
             return false;

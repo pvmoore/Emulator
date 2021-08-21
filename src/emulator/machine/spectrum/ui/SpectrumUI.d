@@ -19,6 +19,7 @@ final class SpectrumUI : VulkanApplication {
     MemoryUI memoryUI;
     RegsUI regsUI;
     ScreenUI screenUI;
+    FileDialog fileDialog;
 
     this(Spectrum spectrum) {
         this.spectrum = spectrum;
@@ -165,6 +166,7 @@ private:
         this.memoryUI = new MemoryUI(context, spectrum);
         this.regsUI = new RegsUI(context, spectrum);
         this.screenUI = new ScreenUI(context, spectrum);
+        this.fileDialog = new FileDialog(context);
 
         initImguiStyle();
     }
@@ -250,19 +252,36 @@ private:
                     spectrum.reset();
                 }
                 igSeparator();
-                if(igMenuItem("Load 48K ROM")) {
-                    spectrum.loadROM48K();
-                }
+                // if(igMenuItem("Load ROM")) {
+                //     string filename = fileDialog.open(".", "*.tap\0*.tzx");
+                //     if(filename) {
+                //         // load ROM
+                //     }
+                // }
                 if(igMenuItem("Load Tape")) {
-                    // TODO - File dialog
-                    spectrum.loadTape("");
+                    string filename = fileDialog.open(".", "*.tap\0*.tzx");
+                    if(filename) {
+                        spectrum.loadTape(filename);
+                    }
                 }
                 if(igMenuItem("Load Snapshot")) {
-                    // TODO - File dialog
+                    string filename = fileDialog.open(".", "*.sna\0*.z80");
+                    if(filename) {
+                        spectrum.loadSnapshot(filename);
+                    }
+                }
+                if(igMenuItem("Load Asm")) {
+                    string filename = fileDialog.open(".", "*.asm");
+                    if(filename) {
+                        //spectrum.loadAsm(filename);
+                    }
                 }
                 igSeparator();
                 if(igMenuItem("Save Snapshot")) {
-                    // TODO - File dialog
+                    string filename = fileDialog.save(".");
+                    if(filename) {
+                        spectrum.saveSnapshot(filename);
+                    }
                 }
 
                 igEndMenu();

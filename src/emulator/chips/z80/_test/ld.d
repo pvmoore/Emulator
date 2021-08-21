@@ -843,6 +843,38 @@ void ld_rr_rr() {
 
     assert(state.SP == 0x1234);
 }
+void ld_indirect_hl_ix_iy() {
+    cpu.reset();
+
+    //------------------------------------------------ ld (hl), $88
+    writeBytes(0x0000, [0x00, 0x00]);
+    state.HL = 0x0000;
+    test("
+        ld (hl), $88
+    ", [0x36, 0x88]);
+
+    assert(bus.read(0x0000) == 0x88);
+
+    // These two are awkward because it has 2 fixups (displacement followed by immediate)
+
+    //------------------------------------------------ ld (ix + $01), $88
+    writeBytes(0x0000, [0x00, 0x00]);
+    state.IX = 0x0000;
+    test("
+        ld (ix + $01), $88
+    ", [0xdd, 0x36, 0x01, 0x88]);
+
+    assert(bus.read(0x0001) == 0x88);
+
+    //------------------------------------------------ ld (iy + $01), $88
+    writeBytes(0x0000, [0x00, 0x00]);
+    state.IY = 0x0000;
+    test("
+        ld (iy + $01), $88
+    ", [0xfd, 0x36, 0x01, 0x88]);
+
+    assert(bus.read(0x0001) == 0x88);
+}
 
 writefln("ldtests");
 
@@ -858,6 +890,7 @@ ld_nn_rr_ED();
 ld_nn_rr();
 ld_rr_nn();
 ld_rr_rr();
+ld_indirect_hl_ix_iy();
 
 } // static if
 } // unittest

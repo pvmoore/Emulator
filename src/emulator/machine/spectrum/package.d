@@ -10,8 +10,9 @@ import emulator.machine.spectrum.Tzx;
 import emulator.machine.spectrum.Z80Snapshot;
 
 import emulator.machine.spectrum.ui.CodeUI;
+import emulator.machine.spectrum.ui.FileDialog;
 import emulator.machine.spectrum.ui.MemoryUI;
 import emulator.machine.spectrum.ui.RegsUI;
 import emulator.machine.spectrum.ui.ScreenUI;
 import emulator.machine.spectrum.ui.SpectrumUI;
-import emulator.machine.spectrum.ui.UIState;
+import emulator.machine.spectrum.ui.UIEvents;

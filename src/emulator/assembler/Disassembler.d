@@ -8,7 +8,7 @@ final class Disassembler {
         this.decoder = decoder;
         this.decoding = new Decoder.Decoding();
     }
-    Line[] decode(ubyte[] code, uint pc, int offset = 0) {
+    Lines decode(ubyte[] code, uint pc, int offset = 0) {
         log("Running disassembler ...");
         log("code length = %s", code.length);
 
@@ -55,7 +55,7 @@ final class Disassembler {
             }
         }
 
-        return lines;
+        return new Lines(lines);
     }
 private:
     void log(A...)(string fmt, A args) {

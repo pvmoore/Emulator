@@ -116,7 +116,7 @@ void execute(string source) {
     string[] sourceLines = getSourceLines(source);
     assembler.reset();
     auto aLines = assembler.encode(source);
-    auto code = extractCode(aLines);
+    auto code = aLines.extractCode();
     executeCode(code, sourceLines.length);
 }
 void test(string source, ubyte[] code) {
@@ -128,23 +128,19 @@ void test(string source, ubyte[] code) {
     assembler.reset();
     auto aLines = assembler.encode(source);
     // writefln("aLines:");
-    // foreach(al; aLines) {
-    //    writefln("\t%s", al);
-    // }
+    // aLines.dump();
     assert(aLines.length==sourceLines.length,
         "aLines.length = %s, sourceLines.length = %s".format(aLines.length, sourceLines.length));
-    auto encoded = extractCode(aLines);
+    auto encoded = aLines.extractCode();
     //writefln("code == %s", encoded);
     assert(encoded == code, "%s != %s".format(encoded, code));
 
     // Disassemble code
     auto dLines = disassembler.decode(code, 0);
     // writefln("dLines:");
-    // foreach(dl; dLines) {
-    //    writefln("\t%s", dl);
-    // }
+    // dLines.dump();
     assert(dLines.length==sourceLines.length, "%s != %s".format(dLines.length, sourceLines.length));
-    foreach(i, l; dLines) {
+    foreach(i, l; dLines.lines) {
         assert(concatAndRemoveSpace(l.tokens) == removeSpace(sourceLines[i]),
             "%s != %s".format(concatAndRemoveSpace(l.tokens), removeSpace(sourceLines[i])));
     }
@@ -171,7 +167,7 @@ void test(void function() preState,
         src = "\t" ~ src;
 
         auto aLines = assembler.encode(src);
-        auto code = extractCode(aLines);
+        auto code = aLines.extractCode();
         string[] sourceLines = getSourceLines(src);
 
         executeCode(code, sourceLines.length);

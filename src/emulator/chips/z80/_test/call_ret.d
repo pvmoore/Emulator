@@ -29,6 +29,10 @@ void call() {
 
     ", [CALL_NN, 0x03, 0x10, 0x00]);
 
+    assert(state.SP == 0x2000-2);
+    assert(bus.read(0x2000-1) == 0x10); // return address hi
+    assert(bus.read(0x2000-2) == 0x03); // return address lo
+
     // Flags are not affected
     assertFlagsClear(allFlags());
 

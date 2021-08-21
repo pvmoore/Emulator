@@ -34,4 +34,5 @@ configuration "ui" {
 
 dependency "common" version="~master"
 dependency "logging" version="~master"
+dependency "events" version="~master"
 dependency "vulkan" version="~master"

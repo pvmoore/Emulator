@@ -54,6 +54,13 @@ public:
 
         ramEditor.PreviewDataType = ImGuiDataType_U8;
         portsEditor.PreviewDataType = ImGuiDataType_U8;
+
+        const eventMask =
+            Evt.CODE_LINE_CHANGED |
+            Evt.INSTRUCTION_CLICKED |
+            Evt.WATCH_TRIGGERED;
+
+        getEvents().subscribe("Memory", eventMask, &handleEvent);
     }
     void render(Frame frame) {
 
@@ -98,5 +105,48 @@ public:
 
         }
         igEnd();
+    }
+private:
+    void handleEvent(EventMsg m) {
+        switch(m.id) {
+            case Evt.INSTRUCTION_CLICKED:
+                Line* line = m.get!(Line*);
+                // If there is an indirect address in these tokens then go to that address
+                auto tokens = line.tokens;
+                log("tokens = %s", tokens);
+                auto addr = -1;
+                foreach(i, t; tokens) {
+                    if(t=="(") {
+                        auto t2 = tokens[i+1];
+                        if(t2.startsWith("$")) {
+                            // indirect address literal
+                            addr = t2[1..$].to!uint(16);
+                            break;
+                        } else if(t2=="hl") {
+                            addr = cpu.state.HL;
+                        } else if(t2=="ix") {
+                            addr = cpu.state.IX;
+                            if(tokens[i+2]=="+") {
+                                addr += tokens[i+3][1..$].to!uint(16);
+                            }
+                        } else if(t2=="iy") {
+                            addr = cpu.state.IY;
+                            if(tokens[i+2]=="+") {
+                                addr += tokens[i+3][1..$].to!uint(16);
+                            }
+                        } else {
+
+                        }                    }
+                }
+                if(addr!=-1) {
+                    ramEditor.scrollToAddress(addr);
+                }
+                break;
+            case Evt.WATCH_TRIGGERED:
+                ramEditor.scrollToAddress(m.get!ulong);
+                break;
+            default:
+                break;
+        }
     }
 }

@@ -3,26 +3,32 @@ module emulator.machine.spectrum.ui.CodeUI;
 import emulator.machine.spectrum.all;
 import vulkan.all;
 
+alias LinesW = emulator.assembler.Lines.Lines;
+
 final class CodeUI {
 private:
     enum WIDTH = 720, HEIGHT = 435;
-    enum REG_COLOUR = ImVec4(1,1,1,1);
+    enum REG_COLOUR = ImVec4(0, 0.8, 1, 1);
     enum INSTR_COLOUR = ImVec4(0.8, 0.8, 0.8, 1);
-    enum NUM_COLOUR = ImVec4(0.7, 1, 0.7, 1);
+    enum NUM_COLOUR = ImVec4(1, 1, 1, 1);
 
     @Borrowed Spectrum spectrum;
     @Borrowed Z80 cpu;
     @Borrowed State state;
 
     Disassembler disasm;
-    Line[] lines;
     Set!string regs;
     char[5] selectAddress = "0\0\0\0\0";
+    char[5] watchAddress = "0\0\0\0\0";
+    char[5] watchLength = "0\0\0\0\0";
+
+    LinesW lines;
     uint _scrollToLine = uint.max;
     string[uint] comments;
-    string[uint] labels;
     Set!uint breakpointLines;
+    WatchRange[] watchList;
     int maxRunInstructions = 0;
+    int currentCodeLine = -1;
 public:
     this(Spectrum spectrum) {
         this.spectrum = spectrum;
@@ -36,10 +42,8 @@ public:
             "bc", "de", "hl", "ix", "iy",
             "ixh", "ixl", "iyh", "iyl"
         ]);
-        addROMComments();
-        addLabels();
 
-        refresh(0, 0x4000);
+        decode(0, 0x4000);
     }
     /**
      * Either:
@@ -47,17 +51,23 @@ public:
      *  2 - Tape loaded
      *  3 - Memory edited
      */
-    void refresh(uint fromAddr, uint length) {
+    void decode(uint fromAddr, uint length) {
         vkassert(fromAddr <= 0xffff);
         if(fromAddr + length > 0x10000) length = 0x10000 - fromAddr;
         ubyte[] code = spectrum.readFromMemory(fromAddr.as!ushort, length.as!ushort);
 
-        this.lines = disasm.decode(code, fromAddr);
-        log("Decompiled %s lines", lines.length);
+        auto newLines = disasm.decode(code, fromAddr);
+        log("Decompiled %s lines", newLines.length);
+        mergeLines(newLines);
 
         scrollToAddress(fromAddr);
 
         addBreakpoints();
+
+        if(fromAddr == 0x0000) {
+            addROMLabels();
+            addROMComments();
+        }
     }
     void scrollToAddress(uint addr) {
         // Calculate line for this address - a bit inefficient but not called often
@@ -94,27 +104,19 @@ public:
 
                 //auto flags = selectTab == 0 ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
 
-                if (igBeginTabItem("Instructions", null, ImGuiTabItemFlags_None))
-                {
-                    enum size = ImVec2(0, HEIGHT-106);
-                    enum border = true;
-                    enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
-
-                    igBeginChildStr("##scrollingChildWindow",
-                        size,
-                        border,
-                        childFlags);
-
-                    renderTable();
-                    igEndChild();
-
-                    renderButtons();
+                if (igBeginTabItem("Instructions", null, ImGuiTabItemFlags_None)) {
+                    renderCode();
                     igEndTabItem();
                 }
 
                 //flags = selectTab == 1 ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
                 if (igBeginTabItem("Breakpoints", null, ImGuiTabItemFlags_None)) {
                     renderBreakpointList();
+                    igEndTabItem();
+                }
+
+                if (igBeginTabItem("WatchList", null, ImGuiTabItemFlags_None)) {
+                    renderWatchList();
                     igEndTabItem();
                 }
 
@@ -126,6 +128,13 @@ public:
         igEnd();
     }
 private:
+    void mergeLines(LinesW newLines) {
+        if(lines is null) {
+            lines = newLines;
+        } else {
+            todo();
+        }
+    }
     void addBreakpointAtAddress(uint addr) {
         foreach(i, line; lines) {
             if(line.address == addr) {
@@ -162,78 +171,96 @@ private:
 
         ImGuiListClipper_End(&clipper);
     }
-    void renderButtons() {
+    void renderWatchList() {
 
+        enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
+
+        igBeginChildStr("##scrollingChildWindow",
+            ImVec2(0, HEIGHT-106),
+            true,
+            childFlags);
+
+        auto numLines = watchList.length.as!int;
+        if(numLines > 0) {
+
+            float lineHeight = igGetTextLineHeightWithSpacing();
+            int toRemove = -1;
+
+            ImGuiListClipper clipper;
+            ImGuiListClipper_Begin(&clipper, numLines, lineHeight);
+            ImGuiListClipper_Step(&clipper);
+
+            for (int line = clipper.DisplayStart; line < clipper.DisplayEnd; line++) {
+
+                igPushIDInt(line);
+                if(igButton("Remove", ImVec2(0,0))) {
+                    toRemove = line;
+                }
+                igPopID();
+                igSameLine(0, 10);
+                igText("%04x".format(watchList[line].start).toStringz());
+                igSameLine(0,5);
+                igText("%04x".format(watchList[line].start + watchList[line].numBytes-1).toStringz());
+                igSameLine(0,10);
+                igText("(%s bytes)".format(watchList[line].numBytes).toStringz());
+            }
+
+            ImGuiListClipper_End(&clipper);
+
+            if(toRemove!=-1) {
+                fireRemoveWatch(watchList[toRemove]);
+                watchList.removeAt(toRemove);
+            }
+        }
+
+        igEndChild();
+
+        igPushStyleVar(ImGuiStyleVar_FrameRounding, 4.0);
         igPushItemWidth(60);
-        if(igInputText("", selectAddress.ptr, selectAddress.length.as!int,
-                        ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue,
+        if(igInputText("Start", watchAddress.ptr, watchAddress.length.as!int,
+                        ImGuiInputTextFlags_CharsHexadecimal,
                         null, null))
         {
-            scrollToAddress(fromStringz(selectAddress.ptr).to!uint(16));
+
+        }
+
+        igSameLine(0,10);
+        if(igInputText("End", watchLength.ptr, watchLength.length.as!int,
+                        ImGuiInputTextFlags_CharsHexadecimal,
+                        null, null))
+        {
+
         }
         igPopItemWidth();
 
-        igSameLine(0, 1);
-        if(igButton("To Addr", ImVec2(0,0))) {
-            scrollToAddress(fromStringz(selectAddress.ptr).to!uint(16));
-        }
-
-        igSameLine(0, 5);
-        if(igButton("To PC", ImVec2(0,0))) {
-            scrollToAddress(state.PC);
-        }
-
-        igSameLine(0,20);
-        igSeparatorEx(ImGuiSeparatorFlags_Vertical);
-
-        igSameLine(0,20);
-        igPushButtonRepeat(true);
-        if(igButton("Step", ImVec2(0,0))) {
-            UIState.executing();
-            spectrum.execute(null, 1, null, () {
-                scrollToAddress(state.PC);
-                UIState.paused();
-            });
-        }
-        igPopButtonRepeat();
-
-        igSameLine(0,40);
-        igSetNextItemWidth(75);
-        igPushIDInt(3);
-        igDragInt("", &maxRunInstructions, 0.2, 1, 100, "%d", ImGuiSliderFlags_Logarithmic);
-        igPopID();
-
-        igSameLine(0,5);
-        if(igButton("Run", ImVec2(0,0))) {
-
-            auto breakpointAddresses = new Set!uint;
-            foreach(l; breakpointLines.values()) {
-                auto addr = lines[l].address;
-                breakpointAddresses.add(addr);
+        igSameLine(0,10);
+        if(igButton("Add", ImVec2(0,0))) {
+            auto start = fromStringz(watchAddress.ptr).to!uint(16);
+            auto end = fromStringz(watchLength.ptr).to!uint(16);
+            if(start <= 0xffff && end >= start && end <=0xffff) {
+                watchList ~= WatchRange(start, end+1-start);
             }
-            UIState.executing();
-            spectrum.execute(breakpointAddresses, maxRunInstructions, () {
-                scrollToAddress(state.PC);
-            }, () {
-                UIState.paused();
-            });
+            fireAddWatch(watchList[$-1]);
         }
 
-        igSameLine(0,5);
-        if(igButton("Run Fast", ImVec2(0,0))) {
-            auto breakpointAddresses = new Set!uint;
-            foreach(l; breakpointLines.values()) {
-                auto addr = lines[l].address;
-                breakpointAddresses.add(addr);
-            }
-            UIState.executing();
-            spectrum.execute(breakpointAddresses, maxRunInstructions, null, () {
-                scrollToAddress(state.PC);
-                UIState.paused();
-            });
-        }
+        igPopStyleVar(1);
     }
-    void renderTable() {
+    void renderCode() {
+        enum size = ImVec2(0, HEIGHT-106);
+        enum border = true;
+        enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
+
+        igBeginChildStr("##scrollingChildWindow",
+            size,
+            border,
+            childFlags);
+
+        renderCodeTable();
+        igEndChild();
+
+        renderCodeButtons();
+    }
+    void renderCodeTable() {
         const flags = ImGuiTableFlags_None
             | ImGuiTableFlags_Borders
             | ImGuiTableFlags_RowBg;
@@ -265,6 +292,12 @@ private:
             for (int line = clipper.DisplayStart; line < clipper.DisplayEnd; line++) {
 
                 auto currentLine = state.PC == lines[line].address;
+                if(currentLine) {
+                    if(line != currentCodeLine) {
+                        currentCodeLine = line;
+                        fireCodeLineChange(&lines[line]);
+                    }
+                }
 
                 renderRow(line, currentLine);
             }
@@ -276,7 +309,6 @@ private:
     }
     void renderRow(int line, bool highlightRow) {
 
-
         igTableNextRow(ImGuiTableRowFlags_None, 10);
 
         if(highlightRow) {
@@ -287,7 +319,29 @@ private:
         }
 
         renderAddressAndLabel(line);
+        renderBytes(line);
+        renderInstructions(line);
+        renderComment(line);
+    }
+    void renderAddressAndLabel(int line) {
+        igTableSetColumnIndex(0);
 
+        // Address
+        auto address = lines[line].address;
+        auto addrStr = "%04X".format(address);
+        igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(addrStr));
+
+        // Label
+        if(lines[line].labels) {
+            string label = lines[line].labels.length == 1
+                ? lines[line].labels[0] ~ ":"
+                : lines[line].labels.join(": ");
+
+            igSameLine(0,8);
+            igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(label));
+        }
+
+        // Click to set/unset a breakpoint
         if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked(0, false)) {
             log("select line %s", line);
             if(breakpointLines.contains(line)) {
@@ -295,21 +349,6 @@ private:
             } else {
                 breakpointLines.add(line);
             }
-        }
-
-        renderBytes(line);
-        renderInstructions(line);
-        renderComment(line);
-    }
-    void renderAddressAndLabel(int line) {
-        igTableSetColumnIndex(0);
-        auto address = lines[line].address;
-        auto addrStr = "%04X".format(address);
-        igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(addrStr));
-        auto p = address in labels;
-        if(p) {
-            igSameLine(0,8);
-            igTextColored(ImVec4(0.8, 0.8, 0.8, 1), toStringz(*p ~ ":"));
         }
     }
     void renderBytes(int line) {
@@ -321,6 +360,7 @@ private:
         igTableSetColumnIndex(2);
         string[] tokens = lines[line].tokens;
         string prev = "";
+        igBeginGroup();
         foreach(i, t; tokens) {
             if(i>0) {
                 auto space = 7;
@@ -345,6 +385,10 @@ private:
 
             prev = t;
         }
+        igEndGroup();
+        if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked(0, false)) {
+            fireInstructionClicked(&lines[line]);
+        }
     }
     void renderComment(int line) {
         igTableSetColumnIndex(3);
@@ -353,26 +397,147 @@ private:
         auto s = ptr ? *ptr : "";
         igTextColored(ImVec4(0.6, 0.6, 0.6, 1), toStringz(s));
     }
-    void addLabels() {
-        // labels from https://skoolkid.github.io/rom/asm
-        this.labels[0x0edf] = "CLEAR_PRB";
-        this.labels[0x0ee7] = "PRB_BYTES";
+    void renderCodeButtons() {
 
-        this.labels[0x0dd9] = "CL_SET";
-        this.labels[0x0dee] = "CL_SET_1";
-        this.labels[0x0df4] = "CL_SET_2";
+        igPushStyleVar(ImGuiStyleVar_FrameRounding, 4.0);
 
-        this.labels[0x11b7] = "NEW";
-        this.labels[0x11cb] = "START_NEW";
-        this.labels[0x11dc] = "RAM_FILL";
-        this.labels[0x11e2] = "RAM_READ";
-        this.labels[0x11ef] = "RAM_DONE";
-        this.labels[0x1219] = "RAM_SET";
+        igPushItemWidth(60);
+        if(igInputText("", selectAddress.ptr, selectAddress.length.as!int,
+                        ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue,
+                        null, null))
+        {
+            scrollToAddress(fromStringz(selectAddress.ptr).to!uint(16));
+        }
+        igPopItemWidth();
+
+        igSameLine(0, 1);
+        if(igButton("To Addr", ImVec2(0,0))) {
+            scrollToAddress(fromStringz(selectAddress.ptr).to!uint(16));
+        }
+
+        igSameLine(0, 5);
+        if(igButton("To PC", ImVec2(0,0))) {
+            scrollToAddress(state.PC);
+        }
+
+        igSameLine(0,20);
+        igSeparatorEx(ImGuiSeparatorFlags_Vertical);
+
+        igSameLine(0,20);
+        igPushButtonRepeat(true);
+        igPushStyleColorVec4(ImGuiCol_Button, ImVec4(0.4, 0.7, 0.4, 0.75));
+        if(igButton("Step", ImVec2(0,0))) {
+            fireExecuteStateChange(ExecuteState.EXECUTING);
+            spectrum.execute(null, 1, null, () {
+                scrollToAddress(state.PC);
+                fireExecuteStateChange(ExecuteState.PAUSED);
+            });
+        }
+        igPopStyleColor(1);
+        igPopButtonRepeat();
+
+        igSameLine(0,40);
+        igSetNextItemWidth(75);
+        igPushIDInt(3);
+        igDragInt("", &maxRunInstructions, 0.2, 1, 100, "%d", ImGuiSliderFlags_Logarithmic);
+        igPopID();
+
+        igPushStyleColorVec4(ImGuiCol_Button, ImVec4(0.7, 0.4, 0.4, 0.75));
+        igSameLine(0,5);
+        if(igButton("Run", ImVec2(0,0))) {
+
+            auto breakpointAddresses = new Set!uint;
+            foreach(l; breakpointLines.values()) {
+                auto addr = lines[l].address;
+                breakpointAddresses.add(addr);
+            }
+            fireExecuteStateChange(ExecuteState.EXECUTING);
+            spectrum.execute(breakpointAddresses, maxRunInstructions, () {
+                scrollToAddress(state.PC);
+            }, () {
+                fireExecuteStateChange(ExecuteState.PAUSED);
+            });
+        }
+
+        igSameLine(0,5);
+        if(igButton("Run Fast", ImVec2(0,0))) {
+            auto breakpointAddresses = new Set!uint;
+            foreach(l; breakpointLines.values()) {
+                auto addr = lines[l].address;
+                breakpointAddresses.add(addr);
+            }
+            fireExecuteStateChange(ExecuteState.EXECUTING);
+            spectrum.execute(breakpointAddresses, maxRunInstructions, null, () {
+                scrollToAddress(state.PC);
+                fireExecuteStateChange(ExecuteState.PAUSED);
+            });
+        }
+        igPopStyleColor(1);
+
+        igPopStyleVar(1);
+    }
+    void addLabel(uint addr, string label) {
+        if(auto line = lines.getLineAtAddress(addr)) {
+            line.labels ~= label;
+        }
+    }
+    /**
+     * Labels from:
+     *      https://skoolkid.github.io/rom/maps/all.html
+     */
+    void addROMLabels() {
+
+        // https://skoolkid.github.io/rom/asm/0ADC.html
+        addLabel(0x0adc, "PO_STORE");
+        addLabel(0x0af0, "PO_ST_E");
+        addLabel(0x0afc, "PO_ST_PR");
+
+        // https://skoolkid.github.io/rom/asm/0DAF.html
+        addLabel(0x0daf, "CL_ALL");
+
+        // https://skoolkid.github.io/rom/asm/0EDF.html
+        addLabel(0x0edf, "CLEAR_PRB");
+        addLabel(0x0ee7, "PRB_BYTES");
+
+        // https://skoolkid.github.io/rom/asm/0D6B.html
+        addLabel(0x0d6b, "CLS");
+        addLabel(0x0d6e, "CLS_LOWER");
+        addLabel(0x0d87, "CLS_1");
+        addLabel(0x0d89, "CLS_2");
+        addLabel(0x0d8e, "CLS_3");
+        addLabel(0x0d94, "CL_CHAN");
+        addLabel(0x0da0, "CL_CHAN_A");
+
+        // https://skoolkid.github.io/rom/asm/0DD9.html
+        addLabel(0x0dd9, "CL_SET");
+        addLabel(0x0dee, "CL_SET_1");
+        addLabel(0x0df4, "CL_SET_2");
+
+        // https://skoolkid.github.io/rom/asm/11B7.html
+        addLabel(0x11b7, "NEW");
+        addLabel(0x11cb, "START_NEW");
+        addLabel(0x11dc, "RAM_FILL");
+        addLabel(0x11e2, "RAM_READ");
+        addLabel(0x11ef, "RAM_DONE");
+        addLabel(0x1219, "RAM_SET");
+
+        // https://skoolkid.github.io/rom/asm/1601.html
+        addLabel(0x1601, "CHAN_OPEN");
+        addLabel(0x160e, "REPORT_O");
+        addLabel(0x1610, "CHAN_OP_1");
+
+        // https://skoolkid.github.io/rom/asm/1615.html
+        addLabel(0x1615, "CHAN_FLAG");
+        addLabel(0x162c, "CALL_JUMP");
+
+        // https://skoolkid.github.io/rom/asm/16DB.html
+        addLabel(0x16db, "INDEXER_1");
+        addLabel(0x16dc, "INDEXER");
     }
     void addROMComments() {
         this.comments[0x0066] = "NMI jump target address";
     }
     void addBreakpoints() {
-        addBreakpointAtAddress(0x0EDF);
+        addBreakpointAtAddress(0x1615);
     }
 }

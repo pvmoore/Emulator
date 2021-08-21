@@ -16,7 +16,6 @@ void setup() {
 
 void assemble1() {
     assembler.reset();
-
     auto lines = assembler.encode("
 
     ");
@@ -346,6 +345,16 @@ void cbInstructions() {
     assert(lines[0].code == [0xfd, 0xcb, 0x07, 0xce], toHexStringArray(lines[0].code));
     //                                   ^^^^ displacement
 }
+void ldIX() {
+    assembler.reset();
+
+    auto lines = assembler.encode("
+        ld (ix+$01), $88
+    ");
+
+    assert(lines.length==1);
+    assert(lines[0].code == [0xdd, 0x36, 0x01, 0x88]);
+}
 
 setup();
 
@@ -359,6 +368,9 @@ dataDW();
 dataDS();
 dataDM();
 cbInstructions();
+ldIX();
+
+writefln("done");
 
 } // static if
 } // unittest

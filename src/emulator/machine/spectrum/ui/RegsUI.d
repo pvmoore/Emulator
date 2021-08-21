@@ -6,6 +6,7 @@ import vulkan.all;
 final class RegsUI {
 private:
     enum WIDTH = 620, HEIGHT = 430;
+    enum REG_COLOUR = ImVec4(0, 0.8, 1, 1);
     @Borrowed VulkanContext context;
     @Borrowed Spectrum spectrum;
     @Borrowed Z80 cpu;
@@ -45,8 +46,13 @@ private:
         igPushFont(context.vk.getImguiFont(1));
 
         reg8Table();
+
         igSameLine(0, 5);
         reg16Table();
+
+        igSameLine(0, 5);
+        flagsTable();
+
         igSameLine(0, 5);
         specialRegTable();
 
@@ -64,7 +70,7 @@ private:
         if(igBeginTableEx("regs8Table", 0, numCols, flags, outerSize, innerWidth)) {
 
             // Headers
-            igTableSetupColumn("Reg", ImGuiTableColumnFlags_None, 0, 0);
+            igTableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 26, 0);
             igTableSetupColumn("",  ImGuiTableColumnFlags_None, 0, 0);
             igTableSetupColumn("+",  ImGuiTableColumnFlags_None, 0, 0);
             igTableSetupColumn("+/-",  ImGuiTableColumnFlags_None, 0, 0);
@@ -78,13 +84,13 @@ private:
             displayRegRow("E", state.E, 8);
             displayRegRow("H", state.H, 8);
             displayRegRow("L", state.L, 8);
+
+            displayEmptyRow4();
+
             displayRegRow("IXH", state.IXH, 8);
             displayRegRow("IXL", state.IXL, 8);
             displayRegRow("IYH", state.IYH, 8);
             displayRegRow("IYL", state.IYL, 8);
-            displayEmptyRow();
-            displayRegRow("I", state.I, 8);
-            displayRegRow("R", state.R, 8);
 
             igEndTable();
         }
@@ -100,7 +106,7 @@ private:
 
         if(igBeginTableEx("regs16Table", 0, numCols, flags, outerSize, innerWidth)) {
             // Headers
-            igTableSetupColumn("Reg", ImGuiTableColumnFlags_None, 0, 0);
+            igTableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 26, 0);
             igTableSetupColumn("",  ImGuiTableColumnFlags_None, 0, 0);
             igTableSetupColumn("+",  ImGuiTableColumnFlags_None, 0, 0);
             igTableSetupColumn("+/-",  ImGuiTableColumnFlags_None, 0, 0);
@@ -112,14 +118,40 @@ private:
             displayRegRow("HL", state.HL, 16);
             displayRegRow("IX", state.IX, 16);
             displayRegRow("IY", state.IY, 16);
-            displayEmptyRow();
+            displayEmptyRow4();
             displayRegRow("SP", state.SP, 16);
             displayRegRow("PC", state.PC, 16);
-            displayEmptyRow();
+            displayEmptyRow4();
             displayRegRow("AF'", state.AF1, 16);
             displayRegRow("BC'", state.BC1, 16);
             displayRegRow("DE'", state.DE1, 16);
             displayRegRow("HL'", state.HL1, 16);
+
+            igEndTable();
+        }
+    }
+    void flagsTable() {
+        const flags = ImGuiTableFlags_None
+            | ImGuiTableFlags_Borders
+            | ImGuiTableFlags_RowBg;
+
+        const numCols = 2;
+        const outerSize = ImVec2(70,0);
+        const innerWidth = 0f;
+
+        if(igBeginTableEx("flagsTable", 1, numCols, flags, outerSize, innerWidth)) {
+
+            // Headers
+            igTableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed, 30, 0);
+            igTableSetupColumn("",  ImGuiTableColumnFlags_None, 0, 0);
+            igTableHeadersRow();
+
+            displayRegRowFmt("%b", "C", state.flagC());
+            displayRegRowFmt("%b", "N", state.flagN());
+            displayRegRowFmt("%b", "P/V", state.flagPV());
+            displayRegRowFmt("%b", "H", state.flagH());
+            displayRegRowFmt("%b", "Z", state.flagZ());
+            displayRegRowFmt("%b", "S", state.flagS());
 
             igEndTable();
         }
@@ -136,13 +168,16 @@ private:
         if(igBeginTableEx("specialRegTable", 1, numCols, flags, outerSize, innerWidth)) {
 
             // Headers
-            igTableSetupColumn("Reg", ImGuiTableColumnFlags_None, 0, 0);
+            igTableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 32, 0);
             igTableSetupColumn("",  ImGuiTableColumnFlags_None, 0, 0);
             igTableHeadersRow();
 
-            displayRegRow2("IFF1", state.IFF1);
-            displayRegRow2("IFF2", state.IFF2);
-            displayRegRow2("IM", state.IM);
+            displayRegRowFmt("%s", "IFF1", state.IFF1);
+            displayRegRowFmt("%s", "IFF2", state.IFF2);
+            displayRegRowFmt("%s", "IM", state.IM);
+
+            displayRegRowFmt("%02x", "I", state.I);
+            displayRegRowFmt("%02x", "R", state.R);
 
             igEndTable();
         }
@@ -151,7 +186,7 @@ private:
         string xfmt = bits==8 ? "%02X" : "%04X";
         igTableNextRow(ImGuiTableRowFlags_None, 10);
         igTableSetColumnIndex(0);
-        igTextColored(ImVec4(0,0.8,1,1), toStringz(name));
+        igTextColored(REG_COLOUR, toStringz(name));
         igTableSetColumnIndex(1);
         igText(toStringz(xfmt.format(value)));
         igTableSetColumnIndex(2);
@@ -159,14 +194,14 @@ private:
         igTableSetColumnIndex(3);
         igText(toStringz("%s".format((value<<24).as!int>>24)));
     }
-    void displayRegRow2(string name, uint value) {
+    void displayRegRowFmt(string fmt, string name, uint value) {
         igTableNextRow(ImGuiTableRowFlags_None, 10);
         igTableSetColumnIndex(0);
-        igText(toStringz(name));
+        igTextColored(REG_COLOUR, toStringz(name));
         igTableSetColumnIndex(1);
-        igText(toStringz("%02X".format(value)));
+        igText(toStringz(fmt.format(value)));
     }
-    void displayEmptyRow() {
+    void displayEmptyRow4() {
         igTableNextRow(ImGuiTableRowFlags_None, 10);
         igTableSetColumnIndex(0);
         igTableSetColumnIndex(1);

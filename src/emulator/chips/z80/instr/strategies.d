@@ -152,20 +152,28 @@ final class LD_r_n : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        ubyte value = cpu.fetchByte();
         auto bits = (op.code >>> 3) & 7;
-        switch(bits) {
-            case 0: s.B = value; break;
-            case 1: s.C = value; break;
-            case 2: s.D = value; break;
-            case 3: s.E = value; break;
-            case 4: s.setReg8(op.regH, value); break;
-            case 5: s.setReg8(op.regL, value); break;
-            case 6:
-                cpu.writeByte(getHLIXdIYd(cpu, op), value);
-                break;
-            case 7: s.A = value; break;
-            default: break;
+
+        if(bits==6) {
+            // get displacement first, followed by immediate
+            ushort HLIXdIYd = getHLIXdIYd(cpu, op);
+            ubyte value = cpu.fetchByte();
+            cpu.writeByte(HLIXdIYd, value);
+
+        } else {
+            // immediate
+            ubyte value = cpu.fetchByte();
+
+            switch(bits) {
+                case 0: s.B = value; break;
+                case 1: s.C = value; break;
+                case 2: s.D = value; break;
+                case 3: s.E = value; break;
+                case 4: s.setReg8(op.regH, value); break;
+                case 5: s.setReg8(op.regL, value); break;
+                case 7: s.A = value; break;
+                default: break;
+            }
         }
     }
 }
@@ -1011,7 +1019,7 @@ final class CALLnn : Strategy {
         ushort nn  = cpu.fetchWord();
 
         // (17 clocks)
-        cpu.pushWord(s.PC-3);
+        cpu.pushWord(s.PC);
         s.PC = nn;
     }
 }
