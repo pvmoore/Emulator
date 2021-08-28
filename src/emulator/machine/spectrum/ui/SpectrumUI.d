@@ -312,6 +312,12 @@ private:
 
         this.log("[%04x] -> [%04x] len = %s", startAddr, endAddr, data.length);
 
+        // Update CodeUI
         codeUI.addLines(lines);
+        codeUI.scrollToAddress(startAddr);
+
+        // Write the code to memory
+        spectrum.writeToMemory(startAddr.as!ushort, data);
+        spectrum.getCpu().state.PC = startAddr.as!ushort;
     }
 }

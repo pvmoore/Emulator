@@ -5,7 +5,6 @@ import emulator.machine.spectrum.all;
 
 final class Spectrum {
 private:
-    enum ROM48K = "resources/roms/48k.rom";
     Z80 cpu;
     Memory memory;
     Z80Ports ports;
@@ -15,11 +14,13 @@ private:
     Semaphore executeSemaphore;
     WatchRange[] watchList;
     Assembler assembler;
+    ROM48K rom;
 public:
     auto getCpu()    { return cpu; }
     auto getMemory() { return memory; }
     auto getPorts()  { return ports; }
     auto getBus()    { return bus; }
+    auto getROM()    { return rom; }
 
     this() {
         this.cpu = new Z80();
@@ -31,6 +32,8 @@ public:
         this.bus = new Bus()
             .add(ports)
             .add(memory);
+
+        this.rom = new ROM48K();
 
         cpu.addBus(bus);
 
@@ -62,9 +65,7 @@ public:
     }
     void loadROM48K() {
         log("Loading ROM");
-        auto data = cast(ubyte[])From!"std.file".read(ROM48K);
-        writeToMemory(0, data);
-        log("ROM loaded");
+        writeToMemory(0, rom.getCode());
     }
     void loadTape(string filename) {
         this.log("Loading tape '%s'", filename);
@@ -141,9 +142,13 @@ private:
                 // Save memory snapshot if we are watching data
                 takeWatchListSnapshot(ramSnapshot);
 
+                this.log("Excuting instruction @ %04x", cpu.state.PC);
+
                 // Execute the next instruction
                 auto instruction = cpu.execute();
                 numInstructionsExecuted++;
+
+                this.log("Instruction = %s", instruction.tokens);
 
                 // Check for watch list changes
                 bool watchTriggered = checkWatchList(ramSnapshot);

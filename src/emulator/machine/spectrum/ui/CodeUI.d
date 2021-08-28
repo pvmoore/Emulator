@@ -24,10 +24,13 @@ private:
 
     LinesW lines;
     uint _scrollToLine = uint.max;
-    Set!uint breakpointLines;
     WatchRange[] watchList;
     int maxRunInstructions = 0;
     int currentCodeLine = -1;
+
+    uint[uint] address2Line;
+    uint[uint] line2address;
+    Set!uint breakpointAddresses;
 public:
     this(Spectrum spectrum) {
         this.spectrum = spectrum;
@@ -35,7 +38,7 @@ public:
         this.state = cpu.state;
         this.disasm = createZ80Disassembler();
         this.regs = new Set!string;
-        this.breakpointLines = new Set!uint;
+        this.breakpointAddresses = new Set!uint;
         this.regs.add([
             "a", "b", "c", "d", "e", "f", "h", "l", "i", "r",
             "af", "bc", "de", "hl", "ix", "iy",
@@ -66,8 +69,7 @@ public:
         addBreakpoints();
 
         if(fromAddr == 0x0000) {
-            addROMLabels();
-            addROMComments();
+            spectrum.getROM().applyMetadata(lines);
         }
     }
     /**
@@ -89,9 +91,6 @@ public:
         }
         line = maxOf(line-6, 0);
         scrollToLine(line);
-    }
-    void scrollToLine(uint line) {
-        this._scrollToLine = line;
     }
     void render(Frame frame) {
 
@@ -137,6 +136,9 @@ public:
         igEnd();
     }
 private:
+    void scrollToLine(uint line) {
+        this._scrollToLine = line;
+    }
     void mergeLines(LinesW newLines) {
         if(lines is null) {
             lines = newLines;
@@ -145,16 +147,23 @@ private:
             lines.merge(newLines);
             log("lines is now %04x to %04x", lines.first().address, lines.last().address);
         }
-    }
-    void addBreakpointAtAddress(uint addr) {
-        foreach(i, line; lines) {
-            if(line.address == addr) {
-                breakpointLines.add(i.as!uint);
-            }
+
+        // Update address2Line/line2address
+        address2Line.clear();
+        line2address.clear();
+        foreach(i, ref l; lines.lines) {
+            address2Line[l.address] = i.as!uint;
+            line2address[i.as!uint] = l.address;
         }
     }
+    void addBreakpointAtAddress(uint addr) {
+        breakpointAddresses.add(addr);
+    }
+    void removeBreakpointAtAddress(uint addr) {
+        breakpointAddresses.remove(addr);
+    }
     void renderBreakpointList() {
-        auto numLines = breakpointLines.length.as!uint;
+        auto numLines = breakpointAddresses.length().as!uint;
         if(numLines==0) return;
 
         float lineHeight = igGetTextLineHeightWithSpacing();
@@ -163,20 +172,21 @@ private:
         ImGuiListClipper_Begin(&clipper, numLines, lineHeight);
         ImGuiListClipper_Step(&clipper);
 
-        auto array = breakpointLines.values();
+        auto array = breakpointAddresses.values();
 
-        for (int line = clipper.DisplayStart; line < clipper.DisplayEnd; line++) {
-            auto l = array[line];
-            auto addr = lines[l].address;
+        for (int bpLine = clipper.DisplayStart; bpLine < clipper.DisplayEnd; bpLine++) {
+            auto addr = array[bpLine];
+            auto line = address2Line[addr];
+
             igText("[%04x]".format(addr).toStringz());
             igSameLine(0,5);
             if(igButton("Go", ImVec2(0,0))) {
-                scrollToLine(l);
+                scrollToLine(line);
                 // TODO - select code tab
             }
             igSameLine(0,10);
             if(igButton("Remove", ImVec2(0,0))) {
-                breakpointLines.remove(l);
+                removeBreakpointAtAddress(addr);
             }
         }
 
@@ -322,10 +332,12 @@ private:
 
         igTableNextRow(ImGuiTableRowFlags_None, 10);
 
+        auto addr = line2address[line];
+
         if(highlightRow) {
             igTableSetBgColor(ImGuiTableBgTarget_RowBg0, 0x6000ff00, -1);
 
-        } else if(breakpointLines.contains(line)) {
+        } else if(breakpointAddresses.contains(addr)) {
             igTableSetBgColor(ImGuiTableBgTarget_RowBg1, 0x600000ff, -1);
         }
 
@@ -355,10 +367,10 @@ private:
         // Click to set/unset a breakpoint
         if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked(0, false)) {
             log("select line %s", line);
-            if(breakpointLines.contains(line)) {
-                breakpointLines.remove(line);
+            if(breakpointAddresses.contains(address)) {
+                removeBreakpointAtAddress(address);
             } else {
-                breakpointLines.add(line);
+                addBreakpointAtAddress(address);
             }
         }
     }
@@ -440,8 +452,9 @@ private:
         igSeparatorEx(ImGuiSeparatorFlags_Vertical);
 
         igSameLine(0,20);
-        igPushButtonRepeat(true);
         igPushStyleColorVec4(ImGuiCol_Button, ImVec4(0.4, 0.7, 0.4, 0.75));
+
+        //igPushButtonRepeat(true);
         if(igButton("Step", ImVec2(0,0))) {
             fireExecuteStateChange(ExecuteState.EXECUTING);
             spectrum.execute(null, 1, null, () {
@@ -449,8 +462,34 @@ private:
                 fireExecuteStateChange(ExecuteState.PAUSED);
             });
         }
+        //igPopButtonRepeat();
+
+        igSameLine(0,5);
+        if(igButton("Step Over", ImVec2(0,0))) {
+
+            // If the current instruction is a call:
+            //  - Place a breakpoint after the call
+            //  - Remove breakpoint after execution (unless it was already there)
+            //  - Fix issue with breakpointLines
+
+            // auto currentLine = lines.getLineAtAddress(state.PC);
+            // if(currentLine.tokens.length > 0 && currentLine.tokens[0] == "call") {
+            //     addBreakpointAtAddress(currentLine.address + currentLine.code.length.as!int);
+            // }
+
+            // todo uncomment
+
+            // fireExecuteStateChange(ExecuteState.EXECUTING);
+            // spectrum.execute(null, 1, null, () {
+            //     scrollToAddress(state.PC);
+            //     fireExecuteStateChange(ExecuteState.PAUSED);
+            // });
+
+
+        }
+
         igPopStyleColor(1);
-        igPopButtonRepeat();
+
 
         igSameLine(0,40);
         igSetNextItemWidth(75);
@@ -462,11 +501,6 @@ private:
         igSameLine(0,5);
         if(igButton("Run", ImVec2(0,0))) {
 
-            auto breakpointAddresses = new Set!uint;
-            foreach(l; breakpointLines.values()) {
-                auto addr = lines[l].address;
-                breakpointAddresses.add(addr);
-            }
             fireExecuteStateChange(ExecuteState.EXECUTING);
             spectrum.execute(breakpointAddresses, maxRunInstructions, () {
                 scrollToAddress(state.PC);
@@ -477,11 +511,7 @@ private:
 
         igSameLine(0,5);
         if(igButton("Run Fast", ImVec2(0,0))) {
-            auto breakpointAddresses = new Set!uint;
-            foreach(l; breakpointLines.values()) {
-                auto addr = lines[l].address;
-                breakpointAddresses.add(addr);
-            }
+
             fireExecuteStateChange(ExecuteState.EXECUTING);
             spectrum.execute(breakpointAddresses, maxRunInstructions, null, () {
                 scrollToAddress(state.PC);
@@ -501,62 +531,6 @@ private:
         if(auto line = lines.getLineAtAddress(addr)) {
             line.comments ~= comment;
         }
-    }
-    /**
-     * Labels from:
-     *      https://skoolkid.github.io/rom/maps/all.html
-     */
-    void addROMLabels() {
-
-        // https://skoolkid.github.io/rom/asm/0ADC.html
-        addLabel(0x0adc, "PO_STORE");
-        addLabel(0x0af0, "PO_ST_E");
-        addLabel(0x0afc, "PO_ST_PR");
-
-        // https://skoolkid.github.io/rom/asm/0DAF.html
-        addLabel(0x0daf, "CL_ALL");
-
-        // https://skoolkid.github.io/rom/asm/0EDF.html
-        addLabel(0x0edf, "CLEAR_PRB");
-        addLabel(0x0ee7, "PRB_BYTES");
-
-        // https://skoolkid.github.io/rom/asm/0D6B.html
-        addLabel(0x0d6b, "CLS");
-        addLabel(0x0d6e, "CLS_LOWER");
-        addLabel(0x0d87, "CLS_1");
-        addLabel(0x0d89, "CLS_2");
-        addLabel(0x0d8e, "CLS_3");
-        addLabel(0x0d94, "CL_CHAN");
-        addLabel(0x0da0, "CL_CHAN_A");
-
-        // https://skoolkid.github.io/rom/asm/0DD9.html
-        addLabel(0x0dd9, "CL_SET");
-        addLabel(0x0dee, "CL_SET_1");
-        addLabel(0x0df4, "CL_SET_2");
-
-        // https://skoolkid.github.io/rom/asm/11B7.html
-        addLabel(0x11b7, "NEW");
-        addLabel(0x11cb, "START_NEW");
-        addLabel(0x11dc, "RAM_FILL");
-        addLabel(0x11e2, "RAM_READ");
-        addLabel(0x11ef, "RAM_DONE");
-        addLabel(0x1219, "RAM_SET");
-
-        // https://skoolkid.github.io/rom/asm/1601.html
-        addLabel(0x1601, "CHAN_OPEN");
-        addLabel(0x160e, "REPORT_O");
-        addLabel(0x1610, "CHAN_OP_1");
-
-        // https://skoolkid.github.io/rom/asm/1615.html
-        addLabel(0x1615, "CHAN_FLAG");
-        addLabel(0x162c, "CALL_JUMP");
-
-        // https://skoolkid.github.io/rom/asm/16DB.html
-        addLabel(0x16db, "INDEXER_1");
-        addLabel(0x16dc, "INDEXER");
-    }
-    void addROMComments() {
-        addComment(0x0066, "NMI jump target address");
     }
     void addBreakpoints() {
         addBreakpointAtAddress(0x1615);

@@ -4,6 +4,7 @@ public:
 
 import emulator.machine.spectrum.CharSet;
 import emulator.machine.spectrum.AbsLoader;
+import emulator.machine.spectrum.ROM48K;
 import emulator.machine.spectrum.Spectrum;
 import emulator.machine.spectrum.Tap;
 import emulator.machine.spectrum.Tzx;

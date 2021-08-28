@@ -123,7 +123,9 @@ private:
             displayRegRow("IY", state.IY, 16);
             displayEmptyRow4();
             displayRegRow("SP", state.SP, 16);
-            displayRegRow("PC", state.PC, 16);
+
+            displayRegRow("PC", state.PC, 16, true);
+
             displayEmptyRow4();
             displayRegRow("AF'", state.AF1, 16);
             displayRegRow("BC'", state.BC1, 16);
@@ -185,7 +187,7 @@ private:
             igEndTable();
         }
     }
-    void displayRegRow(string name, uint value, int bits) {
+    void displayRegRow(string name, uint value, int bits, bool editable = false) {
         string xfmt = bits==8 ? "%02X" : "%04X";
         igTableNextRow(ImGuiTableRowFlags_None, 10);
         igTableSetColumnIndex(0);
@@ -196,6 +198,17 @@ private:
         igText(toStringz("%s".format(value)));
         igTableSetColumnIndex(3);
         igText(toStringz("%s".format((value<<24).as!int>>24)));
+
+        if(editable) {
+            // igInputText("",
+            //     buf.ptr,
+            //     buf.length,
+            //     ImGuiInputTextFlags_None,
+            //     null,
+            //     null);
+        } else {
+
+        }
     }
     void displayRegRowFmt(string fmt, string name, uint value) {
         igTableNextRow(ImGuiTableRowFlags_None, 10);
