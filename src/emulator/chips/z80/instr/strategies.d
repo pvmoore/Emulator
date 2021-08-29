@@ -1073,14 +1073,13 @@ final class JP_HL : Strategy {
      */
     override void execute(Z80 cpu, Op op) const {
         auto s = cpu.state;
-        auto addr = cpu.readWord(s.getReg16(op.regHL));
 
         // 4 clocks (hl)
         // 8 clocks (ix) or (iy)
 
-        // CHECK - does this use displacement?
+        ushort dest = s.getReg16(op.regHL);
 
-        s.PC = addr;
+        s.PC = dest;
     }
 }
 

@@ -400,8 +400,7 @@ void jp() {
     //----------------------------- jp (hl)
 
     state.A = 0x00;
-    state.HL = 0x0000;
-    writeBytes(0x0000, [0x02, 0x10]);
+    state.HL = 0x1002;
     test("
         jp (hl)     ; pc = 0x1000
         inc a       ; pc = 0x1001
@@ -419,8 +418,7 @@ void jp() {
     //----------------------------- jp (ix)
 
     state.A = 0x00;
-    state.IX = 0x0000;
-    writeBytes(0x0000, [0x03, 0x10]);
+    state.IX = 0x1003;
     test("
         jp (ix)     ; pc = 0x1000
         inc a       ; pc = 0x1002
@@ -438,8 +436,7 @@ void jp() {
     //----------------------------- jp (iy)
 
     state.A = 0x00;
-    state.IY = 0x0000;
-    writeBytes(0x0000, [0x03, 0x10]);
+    state.IY = 0x1003;
     test("
         jp (iy)     ; pc = 0x1000
         inc a       ; pc = 0x1002
