@@ -533,6 +533,6 @@ private:
         }
     }
     void addBreakpoints() {
-        addBreakpointAtAddress(0x1615);
+        addBreakpointAtAddress(0x12a9);
     }
 }
