@@ -51,7 +51,7 @@ private:
     @Borrowed Spectrum spectrum;
     @Borrowed Memory memory;
     @Borrowed Z80Ports ports;
-    UpdateableImage!(VFormat.R8G8B8A8_UNORM) image;
+    UpdateableImage!(VK_FORMAT_R8G8B8A8_UNORM) image;
     Quads quads;
     VkSampler sampler;
     Camera2D camera;
@@ -69,15 +69,15 @@ public:
         this.camera = Camera2D.forVulkan(context.vk.windowSize());
         this.sampler = context.device.createSampler(samplerCreateInfo());
 
-        this.image = new UpdateableImage!(VFormat.R8G8B8A8_UNORM)(
+        this.image = new UpdateableImage!(VK_FORMAT_R8G8B8A8_UNORM)(
             context,
             IMAGE_WIDTH,
             IMAGE_HEIGHT,
-            VImageUsage.SAMPLED,
-            VImageLayout.SHADER_READ_ONLY_OPTIMAL
+            VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         );
         this.image
-            .image.createView(VFormat.R8G8B8A8_UNORM, VImageViewType._2D, VImageAspect.COLOR);
+            .image.createView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
         this.image.clear(RGBAb(0xee, 0xee, 0xee, 0xff));
 
         this.quads = new Quads(context, image.getImageMeta(), sampler, 1);

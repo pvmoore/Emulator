@@ -64,3 +64,12 @@ Read:
 
 - 0xfefe SHIFT,Z,X,C,V keys (bits 0-4)
 etc...
+
+### Channels
+
+https://sinclair.wiki.zxnet.co.uk/wiki/Channels_and_streams
+
+- K Keyboard (0, 1)
+- S Screen (2)
+- P Printer (3)
+- R Edit buffer

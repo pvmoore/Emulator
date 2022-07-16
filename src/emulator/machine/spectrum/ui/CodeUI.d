@@ -196,7 +196,7 @@ private:
 
         enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
 
-        igBeginChildStr("##scrollingChildWindow",
+        igBeginChild_Str("##scrollingChildWindow",
             ImVec2(0, HEIGHT-106),
             true,
             childFlags);
@@ -213,7 +213,7 @@ private:
 
             for (int line = clipper.DisplayStart; line < clipper.DisplayEnd; line++) {
 
-                igPushIDInt(line);
+                igPushID_Int(line);
                 if(igButton("Remove", ImVec2(0,0))) {
                     toRemove = line;
                 }
@@ -238,7 +238,7 @@ private:
 
         igPushStyleVar(ImGuiStyleVar_FrameRounding, 4.0);
         igPushItemWidth(60);
-        if(igInputText("Start", watchAddress.ptr, watchAddress.length.as!int,
+        if(igInputText("Start", cast(immutable(char)*)watchAddress.ptr, watchAddress.length.as!int,
                         ImGuiInputTextFlags_CharsHexadecimal,
                         null, null))
         {
@@ -246,7 +246,7 @@ private:
         }
 
         igSameLine(0,10);
-        if(igInputText("End", watchLength.ptr, watchLength.length.as!int,
+        if(igInputText("End", cast(immutable(char)*)watchLength.ptr, watchLength.length.as!int,
                         ImGuiInputTextFlags_CharsHexadecimal,
                         null, null))
         {
@@ -271,7 +271,7 @@ private:
         enum border = true;
         enum childFlags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav;
 
-        igBeginChildStr("##scrollingChildWindow",
+        igBeginChild_Str("##scrollingChildWindow",
             size,
             border,
             childFlags);
@@ -306,7 +306,7 @@ private:
 
             // scroll to line
             if(_scrollToLine != uint.max) {
-                igSetScrollYFloat(_scrollToLine*lineHeight);
+                igSetScrollY_Float(_scrollToLine*lineHeight);
                 _scrollToLine = uint.max;
             }
 
@@ -430,7 +430,7 @@ private:
         igPushStyleVar(ImGuiStyleVar_FrameRounding, 4.0);
 
         igPushItemWidth(60);
-        if(igInputText("", selectAddress.ptr, selectAddress.length.as!int,
+        if(igInputText("", cast(immutable(char)*)selectAddress.ptr, selectAddress.length.as!int,
                         ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue,
                         null, null))
         {
@@ -452,7 +452,7 @@ private:
         igSeparatorEx(ImGuiSeparatorFlags_Vertical);
 
         igSameLine(0,20);
-        igPushStyleColorVec4(ImGuiCol_Button, ImVec4(0.4, 0.7, 0.4, 0.75));
+        igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4, 0.7, 0.4, 0.75));
 
         //igPushButtonRepeat(true);
         if(igButton("Step", ImVec2(0,0))) {
@@ -493,11 +493,11 @@ private:
 
         igSameLine(0,40);
         igSetNextItemWidth(75);
-        igPushIDInt(3);
+        igPushID_Int(3);
         igDragInt("", &maxRunInstructions, 0.2, 1, 100, "%d", ImGuiSliderFlags_Logarithmic);
         igPopID();
 
-        igPushStyleColorVec4(ImGuiCol_Button, ImVec4(0.7, 0.4, 0.4, 0.75));
+        igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.7, 0.4, 0.4, 0.75));
         igSameLine(0,5);
         if(igButton("Run", ImVec2(0,0))) {
 
