@@ -91,7 +91,7 @@ final class SpectrumUI : VulkanApplication {
         initScene();
     }
     void update(Frame frame) {
-        fps.beforeRenderPass(frame, vk.getFPS);
+        fps.beforeRenderPass(frame, vk.getFPSSnapshot());
         screenUI.update(frame);
     }
     override void render(Frame frame) {

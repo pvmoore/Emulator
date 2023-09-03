@@ -56,7 +56,7 @@ public:
      *  4 - Memory edited
      */
     void codeModified(uint fromAddr, uint length) {
-        vkassert(fromAddr <= 0xffff);
+        throwIfNot(fromAddr <= 0xffff);
 
         if(fromAddr + length > 0x10000) length = 0x10000 - fromAddr;
         ubyte[] code = spectrum.readFromMemory(fromAddr.as!ushort, length.as!ushort);
