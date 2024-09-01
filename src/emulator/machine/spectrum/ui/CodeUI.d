@@ -94,7 +94,8 @@ public:
     }
     void render(Frame frame) {
 
-        igSetNextWindowPos(ImVec2(1390,10), ImGuiCond_Once, ImVec2(1.0, 0.0));
+        auto vp = igGetMainViewport();
+        igSetNextWindowPos(vp.WorkPos + ImVec2(1390,10), ImGuiCond_Always, ImVec2(1.0, 0.0));
         igSetNextWindowSize(ImVec2(WIDTH, HEIGHT), ImGuiCond_Once);
 
         auto windowFlags = ImGuiWindowFlags_None
@@ -365,7 +366,7 @@ private:
         }
 
         // Click to set/unset a breakpoint
-        if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked(0, false)) {
+        if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked_Bool(0, false)) {
             log("select line %s", line);
             if(breakpointAddresses.contains(address)) {
                 removeBreakpointAtAddress(address);
@@ -409,7 +410,7 @@ private:
             prev = t;
         }
         igEndGroup();
-        if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked(0, false)) {
+        if(igIsItemHovered(ImGuiHoveredFlags_None) && igIsMouseClicked_Bool(0, false)) {
             fireInstructionClicked(&lines[line]);
         }
     }
@@ -449,7 +450,7 @@ private:
         }
 
         igSameLine(0,20);
-        igSeparatorEx(ImGuiSeparatorFlags_Vertical);
+        igSeparatorEx(ImGuiSeparatorFlags_Vertical, 1.0f);
 
         igSameLine(0,20);
         igPushStyleColor_Vec4(ImGuiCol_Button, ImVec4(0.4, 0.7, 0.4, 0.75));

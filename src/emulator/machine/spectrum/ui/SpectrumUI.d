@@ -208,7 +208,7 @@ private:
     void renderImguiWindows(Frame frame) {
         vk.imguiRenderStart(frame);
 
-        igSetNextWindowPos(ImVec2(0,0), ImGuiCond_Always, ImVec2(0.0, 0.0));
+        igSetNextWindowPos(igGetMainViewport().WorkPos, ImGuiCond_Always, ImVec2(0.0, 0.0));
         igSetNextWindowSize(ImVec2(-1, -1), ImGuiCond_Always);
 
         auto flags = ImGuiWindowFlags_NoTitleBar
@@ -237,6 +237,10 @@ private:
         vk.imguiRenderEnd(frame);
     }
     void renderMenu(Frame frame) {
+
+        //igSetNextWindowDockID(0, ImGuiCond_Always);
+        //igSetNextWindowPos(ImVec2(0,0), ImGuiCond_Always, ImVec2(1.0, 1.0));
+
         if(igBeginMenuBar()) {
 
             if(igBeginMenu("File", true)) {

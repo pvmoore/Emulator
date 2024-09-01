@@ -20,9 +20,7 @@ public:
     }
     void render(Frame frame) {
 
-
-
-        igSetNextWindowPos(ImVec2(1390,890), ImGuiCond_Once, ImVec2(1.0, 1.0));
+        igSetNextWindowPos(igGetMainViewport().WorkPos + ImVec2(1390,890), ImGuiCond_Once, ImVec2(1.0, 1.0));
         igSetNextWindowSize(ImVec2(WIDTH, HEIGHT), ImGuiCond_Once);
 
         auto windowFlags = ImGuiWindowFlags_None
@@ -70,7 +68,7 @@ private:
         const outerSize = ImVec2(180,0);
         const innerWidth = 0f;
 
-        if(igBeginTableEx("regs8Table", 0, numCols, flags, outerSize, innerWidth)) {
+        if(igBeginTable("regs8Table", numCols, flags, outerSize, innerWidth)) {
 
             // Headers
             igTableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 26, 0);
@@ -107,7 +105,7 @@ private:
         const outerSize = ImVec2(240,0);
         const innerWidth = 0f;
 
-        if(igBeginTableEx("regs16Table", 0, numCols, flags, outerSize, innerWidth)) {
+        if(igBeginTable("regs16Table", numCols, flags, outerSize, innerWidth)) {
             // Headers
             igTableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 26, 0);
             igTableSetupColumn("",  ImGuiTableColumnFlags_None, 0, 0);
@@ -144,7 +142,7 @@ private:
         const outerSize = ImVec2(70,0);
         const innerWidth = 0f;
 
-        if(igBeginTableEx("flagsTable", 1, numCols, flags, outerSize, innerWidth)) {
+        if(igBeginTable("flagsTable", numCols, flags, outerSize, innerWidth)) {
 
             // Headers
             igTableSetupColumn("Flag", ImGuiTableColumnFlags_WidthFixed, 30, 0);
@@ -170,7 +168,7 @@ private:
         const outerSize = ImVec2(100,0);
         const innerWidth = 0f;
 
-        if(igBeginTableEx("specialRegTable", 1, numCols, flags, outerSize, innerWidth)) {
+        if(igBeginTable("specialRegTable", numCols, flags, outerSize, innerWidth)) {
 
             // Headers
             igTableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 32, 0);

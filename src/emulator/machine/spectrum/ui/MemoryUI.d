@@ -34,21 +34,21 @@ public:
         this.portsEditor = new MemoryEditor()
             .withFont(context.vk.getImguiFont(1));
 
-        ramEditor.ReadFn = (ptr, offset) {
+        ramEditor.ReadFn = (ptr, offset, userData) {
             ubyte value;
             memory.read(offset.as!uint, value);
             return value;
         };
-        portsEditor.ReadFn = (ptr, offset) {
+        portsEditor.ReadFn = (ptr, offset, userData) {
             ubyte value;
             ports.read(offset.as!uint, value);
             return value;
         };
 
-        ramEditor.WriteFn = (ptr, offset, value) {
+        ramEditor.WriteFn = (ptr, offset, value, userData) {
             memory.write(offset.as!uint, value.as!ubyte);
         };
-        portsEditor.WriteFn = (ptr, offset, value) {
+        portsEditor.WriteFn = (ptr, offset, value, userData) {
             ports.write(offset.as!uint, value.as!ubyte);
         };
 
@@ -64,7 +64,7 @@ public:
     }
     void render(Frame frame) {
 
-        igSetNextWindowPos(ImVec2(10,890), ImGuiCond_Once, ImVec2(0.0, 1.0));
+        igSetNextWindowPos(igGetMainViewport().WorkPos + ImVec2(10,890), ImGuiCond_Once, ImVec2(0.0, 1.0));
         igSetNextWindowSize(ImVec2(WIDTH, HEIGHT), ImGuiCond_Once);
 
         auto windowFlags = ImGuiWindowFlags_None
