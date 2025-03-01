@@ -37,6 +37,10 @@ final class SpectrumUI : VulkanApplication {
         };
         VulkanProperties vprops = {
             appName: NAME,
+            apiVersion: vulkanVersion(1,1,0),
+            shaderSrcDirectories: ["shaders/", "/pvmoore/d/libs/vulkan/shaders/"],
+            shaderDestDirectory: "resources/shaders/",
+            shaderSpirvVersion: "1.3",
             imgui: {
                 enabled: true,
                 configFlags:

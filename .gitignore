@@ -20,6 +20,8 @@ node_modules/
 *.xml
 *.dll
 *.log
+*.pdb
+*.spv
 
 # Visual studio project files
 *.vcxproj*
