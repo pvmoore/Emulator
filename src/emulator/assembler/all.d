@@ -11,6 +11,7 @@ import std.typecons             : Tuple, tuple;
 import std.conv                 : to;
 
 import common;
+import common.containers;
 import common.parser;
 
 import emulator.util;
