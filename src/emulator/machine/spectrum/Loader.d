@@ -4,7 +4,7 @@ import emulator.machine.spectrum.all;
 import emulator.chips.z80.all;
 import std.stdio : File, writefln;
 import std.string : toLower;
-import common : endsWith;
+import common.utils : endsWith;
 import std.path : extension;
 
 /**

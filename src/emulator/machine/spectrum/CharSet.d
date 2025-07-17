@@ -4,7 +4,7 @@ import emulator.machine.spectrum.all;
 import emulator.util;
 import std.stdio : writefln;
 import std.conv : to;
-import common : indexOf;
+import common.utils : indexOf;
 /**
  *  https://en.wikipedia.org/wiki/ZX_Spectrum_character_set
  */

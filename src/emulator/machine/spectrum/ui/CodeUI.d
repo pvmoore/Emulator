@@ -164,7 +164,7 @@ private:
         breakpointAddresses.remove(addr);
     }
     void renderBreakpointList() {
-        auto numLines = breakpointAddresses.length().as!uint;
+        auto numLines = breakpointAddresses.size().as!uint;
         if(numLines==0) return;
 
         float lineHeight = igGetTextLineHeightWithSpacing();
@@ -173,7 +173,7 @@ private:
         ImGuiListClipper_Begin(&clipper, numLines, lineHeight);
         ImGuiListClipper_Step(&clipper);
 
-        auto array = breakpointAddresses.values();
+        auto array = breakpointAddresses.keys();
 
         for (int bpLine = clipper.DisplayStart; bpLine < clipper.DisplayEnd; bpLine++) {
             auto addr = array[bpLine];

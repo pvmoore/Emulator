@@ -12,6 +12,8 @@ import std.datetime.stopwatch   : StopWatch;
 import std.string               : toStringz, fromStringz;
 
 import common;
+import common.utils;
+import common.io;
 import common.containers;
 import logging;
 import events;
