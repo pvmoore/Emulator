@@ -6,6 +6,7 @@ target/
 .vs/
 bin/
 .bin/
+.cache/
 node_modules/
 
 .idea/

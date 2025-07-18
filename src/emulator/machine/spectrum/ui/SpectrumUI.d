@@ -31,7 +31,7 @@ final class SpectrumUI : VulkanApplication {
             fullscreen:     false,
             vsync:          false,
             title:          NAME,
-            icon:           "/pvmoore/_assets/icons/3dshapes.png",
+            icon:           "resources/images/bird-logo.png",
             showWindow:     false,
             frameBuffers:   3
         };
@@ -48,8 +48,8 @@ final class SpectrumUI : VulkanApplication {
                     ImGuiConfigFlags_DockingEnable |
                     ImGuiConfigFlags_ViewportsEnable,
                 fontPaths: [
-                    "/pvmoore/_assets/fonts/Roboto-Regular.ttf",
-                    "/pvmoore/_assets/fonts/RobotoCondensed-Regular.ttf"
+                    "resources/fonts/Roboto-Regular.ttf",
+                    "resources/fonts/RobotoCondensed-Regular.ttf"
                 ],
                 fontSizes: [
                     22,
@@ -108,7 +108,7 @@ final class SpectrumUI : VulkanApplication {
         // begin the render pass
         b.beginRenderPass(
             renderPass,
-            res.frameBuffer,
+            frame.frameBuffer,
             toVkRect2D(0,0, vk.windowSize.toVkExtent2D),
             [ bgColour ],
             VK_SUBPASS_CONTENTS_INLINE
