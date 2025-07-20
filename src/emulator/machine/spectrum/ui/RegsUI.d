@@ -44,7 +44,7 @@ public:
 private:
     void regsTable() {
 
-        igPushFont(context.vk.getImguiFont(1));
+        igPushFont(context.vk.getImguiFont(1), 0);
 
         reg8Table();
 
