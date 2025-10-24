@@ -10,7 +10,7 @@ import std.datetime.stopwatch : StopWatch;
 import emulator.all;
 import emulator.machine.spectrum;
 import logging  : log, flushLog, setEagerFlushing;
-import vulkan.all;
+import vulkan;
 
 // Required for MessageBoxA etc...
 pragma(lib, "user32.lib");

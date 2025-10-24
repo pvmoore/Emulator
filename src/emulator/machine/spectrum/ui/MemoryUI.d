@@ -1,7 +1,7 @@
 module emulator.machine.spectrum.ui.MemoryUI;
 
 import emulator.machine.spectrum.all;
-import vulkan.all;
+import vulkan;
 
 /**
  *

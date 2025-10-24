@@ -2,7 +2,8 @@ module emulator.machine.spectrum.ui.SpectrumUI;
 
 import emulator.all;
 import emulator.machine.spectrum.all;
-import vulkan.all;
+import vulkan;
+import maths : Camera2D;
 
 final class SpectrumUI : VulkanApplication {
     Vulkan vk;

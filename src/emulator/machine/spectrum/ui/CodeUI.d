@@ -1,7 +1,9 @@
 module emulator.machine.spectrum.ui.CodeUI;
 
+import std.array : join;
 import emulator.machine.spectrum.all;
-import vulkan.all;
+import vulkan;
+import maths : maxOf;
 
 alias LinesW = emulator.assembler.Lines.Lines;
 

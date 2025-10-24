@@ -1,7 +1,8 @@
 module emulator.machine.spectrum.ui.ScreenUI;
 
 import emulator.machine.spectrum.all;
-import vulkan.all;
+import vulkan;
+import maths  : Camera2D, float2;
 
 /**
  *  Display Spectrum screen
