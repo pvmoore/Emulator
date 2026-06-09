@@ -51,7 +51,7 @@ public:
             if(op.code == 0xcb) {
                 // The next byte is a displacement
                 _fetch();
-                op.displacement = opt(op.code.as!byte);
+                op.displacement = optional!byte(op.code.as!byte);
                 _fetch();
                 instruction = &groupDDCB[op.code];
             } else {
@@ -69,7 +69,7 @@ public:
             if(op.code == 0xcb) {
                 // The next byte is a displacement
                 _fetch();
-                op.displacement = opt(op.code.as!byte);
+                op.displacement = optional!byte(op.code.as!byte);
                 _fetch();
                 instruction = &groupFDCB[op.code];
             } else {
